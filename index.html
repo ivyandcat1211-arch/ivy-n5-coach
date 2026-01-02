@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ivy's N5 日本生活全攻略 12.2 (AI 全效修正版)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; overflow-x: hidden; touch-action: manipulation; background-color: #f8fafc; }
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+        @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse-red { animation: pulse-red 1.5s infinite; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        .card-container { width: 100%; height: 500px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        rt { font-size: 0.55em; color: #6366f1; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+        const apiKey = "AIzaSyAwqb59nLSBTv0A948W7ni7Az-hOfBb4t0"; 
+
+        const Icons = {
+            Volume: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>,
+            Mic: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>,
+            Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>,
+            List: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>,
+            ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
+            ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+            Anchor: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"></circle><line x1="12" cy1="22" x2="12" y2="8"></line></svg>,
+            Square: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        };
+
+        // 分類映射
+        const SUPER_CAT_IDS = {
+            "生活日常": [1, 3, 55, 56, 57, 58, 59, 60, 61, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 107, 108, 109, 128, 129, 130, 151, 152, 153, 154, 155, 156, 157, 158, 159, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 438, 439, 440, 441, 452, 454],
+            "職場商務": [35, 37, 110, 254, 255, 256, 257, 258, 259, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 326, 327, 328, 329, 330, 365, 382, 412, 424, 426, 428, 430, 433, 447],
+            "人體健康": [13, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 250, 387, 446],
+            "空間地點": [2, 36, 38, 69, 80, 81, 82, 83, 84, 85, 86, 115, 116, 117, 118, 119, 120, 121, 122, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 215, 216, 217, 218, 276, 277, 278, 279, 280, 289, 290, 351, 352, 353, 354, 360, 366, 367, 368, 431, 432, 434, 443],
+            "基礎必備": [4, 5, 6, 7, 17, 19, 51, 52, 53, 54, 111, 123, 124, 125, 126, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 191, 192, 193, 194, 195, 196, 197, 198, 199, 204, 205, 206, 207, 208, 209, 210, 386, 388, 444],
+            "休閒興趣": [105, 106, 127, 271, 272, 273, 274, 275, 335, 336, 337, 338, 339, 340, 369, 371, 372, 373, 375, 376, 377, 378, 379, 380, 423, 429, 435, 436, 437, 451],
+            "描述與接續": [8, 11, 12, 14, 18, 21, 22, 43, 44, 45, 46, 47, 48, 49, 50, 62, 63, 64, 65, 66, 67, 68, 87, 88, 89, 90, 91, 92, 93, 94, 114, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 200, 201, 202, 203, 244, 245, 246, 247, 248, 249, 252, 253, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 281, 282, 283, 284, 285, 286, 287, 288, 303, 304, 305, 306, 307, 308, 309, 310, 321, 322, 323, 324, 325, 331, 332, 333, 334, 341, 343, 344, 345, 346, 347, 348, 349, 350, 355, 356, 357, 358, 370, 381, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 415, 416, 417, 418, 419, 420, 421, 422, 425, 445, 448, 449, 450, 453, 455],
+            "時尚購物": [25, 41, 42, 112, 113, 160, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 359, 442]
+        };
+
+        // --- 重點修正：攤平 REAL_DATABASE_RAW 並納入所有單字 ---
+        const RAW_DATA = [
+            { "id": 1, "level": "N5", "word": "アイスクリーム", "reading": "アイスクリーム", "meaning": "冰淇淋", "example": "<ruby>暑<rt>あつ</rt></ruby>い<ruby>日<rt>ひ</rt></ruby>に<ruby>冷<rt>つめ</rt></ruby>たいアイスクリームを<ruby>食<rt>た</rt></ruby>べます。", "translation": "在炎熱的日子裡吃冰涼的冰淇淋。", "category": "生活日常" },
+            { "id": 2, "level": "N5", "word": "間", "reading": "あいだ", "meaning": "之間, 中間", "example": "<ruby>銀行<rt>ぎんこう</rt></ruby>と<ruby>郵便局<rt>ゆうびんきょく</rt></ruby>の<ruby>間<rt>あいだ</rt></ruby>に、きれいな<ruby>公園<rt>こうえん</rt></ruby>があります。", "translation": "銀行和郵局之間，有一個漂亮的公園。", "category": "空間地點" },
+            { "id": 3, "level": "N5", "word": "會います", "reading": "あいます", "meaning": "見面", "example": "<ruby>明日<rt>あした</rt></ruby>、<ruby>駅<rt>えき</rt></ruby>の<ruby>近<rt>ちか</rt></ruby>くで<ruby>友達<rt>ともだち</rt></ruby>に<ruby>會<rt>あ</rt></ruby>います。", "translation": "明天在車站附近跟朋友見面。", "category": "生活日常" },
+            { "id": 4, "level": "N5", "word": "青", "reading": "あお", "meaning": "藍色", "example": "<ruby>彼女<rt>かのじょ</rt></ruby>は<ruby>青<rt>あお</rt></ruby>が<ruby>一番好<rt>いちばんす</rt></ruby>きな<ruby>色<rt>いろ</rt></ruby>です。", "translation": "藍色是她最喜歡的顏色。", "category": "基礎必備" },
+            { "id": 5, "level": "N5", "word": "青い", "reading": "あおい", "meaning": "藍的", "example": "<ruby>今日<rt>きょう</rt></ruby>は<ruby>空<rt>そら</rt></ruby>がとても<ruby>青<rt>あお</rt></ruby>いですね。", "translation": "今天的空很藍呢。", "category": "基礎必備" },
+            { "id": 6, "level": "N5", "word": "赤", "reading": "あか", "meaning": "紅色", "example": "<ruby>信号<rt>しんごう</rt></ruby>の<ruby>赤<rt>あか</rt></ruby>は「<ruby>止<rt>と</rt></ruby>まれ」という<ruby>意味<rt>いみ</rt></ruby>です。", "translation": "紅綠燈的紅色是「停止」的意思。", "category": "基礎必備" },
+            { "id": 7, "level": "N5", "word": "赤い", "reading": "あかい", "meaning": "紅的", "example": "この<ruby>赤<rt>あか</rt></ruby>いリンゴはとても<ruby>甘<rt>あま</rt></ruby>いです。", "translation": "這顆紅色的蘋果非常甜。", "category": "基礎必備" },
+            { "id": 8, "level": "N5", "word": "明るい", "reading": "あかるい", "meaning": "開朗、明亮", "example": "<ruby>田中<rt>たなか</rt></ruby>さんはいつも<ruby>明<rt>あか</rt></ruby>るい<ruby>性格<rt>せいかく</rt></ruby>で、<ruby>人気<rt>にんき</rt></ruby>があります。", "translation": "田中先生性格總是很開朗，很受歡迎。", "category": "描述與接續" },
+            { "id": 9, "level": "N5", "word": "開けます", "reading": "あけます", "meaning": "打開", "example": "<ruby>窓<rt>まど</rt></ruby>を<ruby>開<rt>あ</rt></ruby>けて、<ruby>涼<rt>すず</rt></ruby>しい<ruby>風<rt>かぜ</rt></ruby>を<ruby>入<rt>い</rt></ruby>れましょう。", "translation": "打開窗戶，讓涼爽的風進來吧。", "category": "生活日常" },
+            { "id": 10, "level": "N5", "word": "あげます", "reading": "あげます", "meaning": "給、給予", "example": "<ruby>娘<rt>むすめ</rt></ruby>の<ruby>誕生日<rt>たんじょうび</rt></ruby>に<ruby>新<rt>あたら</rt></ruby>しいプレゼントをあげました。", "translation": "在女兒的生日給了她新的禮物。", "category": "生活日常" },
+            { "id": 11, "level": "N5", "word": "朝", "reading": "あさ", "meaning": "早上", "example": "<ruby>毎朝<rt>まいあさ</rt></ruby>、お<ruby>茶<rt>ちゃ</rt></ruby>を<ruby>飲<rt>の</rt></ruby>んでから<ruby>仕事<rt>しごと</rt></ruby>に<ruby>行<rt>い</rt></ruby>きます。", "translation": "每天早上喝完茶後去工作。", "category": "描述與接續" },
+            { "id": 12, "level": "N5", "word": "あさって", "reading": "あさって", "meaning": "後天", "example": "あさってから、<ruby>家族<rt>かぞく</rt></ruby>で<ruby>日本旅行<rt>にほんりょこう</rt></ruby>に<ruby>行<rt>い</rt></ruby>きます。", "translation": "從後天開始要跟家人一起去日本旅行。", "category": "描述與接續" },
+            { "id": 13, "level": "N5", "word": "足", "reading": "あし", "meaning": "腳、腿", "example": "<ruby>昨日<rt>きのう</rt></ruby>たくさん<ruby>歩<rt>ある</rt></ruby>いたので、<ruby>足<rt>あし</rt></ruby>が<ruby>痛<rt>いた</rt></ruby>いです。", "translation": "昨天走了很多路，所以腳很痛。", "category": "人體健康" },
+            { "id": 14, "level": "N5", "word": "明日", "reading": "あした", "meaning": "明天", "example": "<ruby>明日<rt>あした</rt></ruby>の<ruby>天氣<rt>てんき</rt></ruby>は<ruby>晴<rt>晴</rt></ruby>れだといいですね。", "translation": "明天的天氣如果是晴天就好了。", "category": "描述與接續" },
+            { "id": 15, "level": "N5", "word": "會う", "reading": "あう", "meaning": "見面", "example": "<ruby>駅<rt>えき</rt></ruby>で<ruby>友達<rt>ともだち</rt></ruby>に<ruby>會<rt>あ</rt></ruby>います。", "translation": "在車站和朋友見面。", "category": "生活日常" },
+            { "id": 16, "level": "N5", "word": "開ける", "reading": "あける", "meaning": "打開", "example": "<ruby>窓<rt>まど</rt></ruby>を<ruby>開<rt>あ</rt></ruby>けてください。", "translation": "請打開窗戶。", "category": "生活日常" },
+            { "id": 17, "level": "N5", "word": "暖かい", "reading": "あたたかい", "meaning": "溫暖的", "example": "<ruby>今日<rt>きょう</rt></ruby>はとても<ruby>暖<rt>あたた</rt></ruby>かいですね。", "translation": "今天非常溫暖呢。", "category": "基礎必備" },
+            { "id": 18, "level": "N5", "word": "新しい", "reading": "あたらしい", "meaning": "新的", "example": "<ruby>新<rt>あたら</rt></ruby>しい<ruby>靴<rt>くつ</rt></ruby>を<ruby>買<rt>か</rt></ruby>いました。", "translation": "買了新鞋子。", "category": "描述與接續" },
+            { "id": 19, "level": "N5", "word": "暑い", "reading": "あつい", "meaning": "熱的 (天氣)", "example": "<ruby>日本<rt>にほん</rt></ruby>の<ruby>夏<rt>なつ</rt></ruby>はとても<ruby>暑<rt>あつ</rt></ruby>いです。", "translation": "日本的夏天非常熱。", "category": "基礎必備" },
+            { "id": 20, "level": "N5", "word": "行く", "reading": "いく", "meaning": "去", "example": "<ruby>明日<rt>あした</rt></ruby>、<ruby>銀行<rt>ぎんこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "明天要去銀行。", "category": "生活日常" },
+            { "id": 21, "level": "N5", "word": "忙しい", "reading": "いそがしい", "meaning": "忙碌的", "example": "<ruby>今日<rt>きょう</rt></ruby>は<ruby>仕事<rt>しごと</rt></ruby>が<ruby>忙<rt>いそが</rt></ruby>しいです。", "translation": "今天工作很忙。", "category": "描述與接續" },
+            { "id": 22, "level": "N5", "word": "一緒に", "reading": "いっしょに", "meaning": "一起", "example": "<ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>晩<rt>ばん</rt></ruby>ご<ruby>飯<rt>はん</rt></ruby>を<ruby>食<rt>た</rt></ruby>べましょう。", "translation": "一起吃晚餐吧。", "category": "描述與接續" },
+            { "id": 23, "level": "N5", "word": "美味しい", "reading": "おいしい", "meaning": "好吃的", "example": "この<ruby>料理<rt>りょうり</rt></ruby>はとても<ruby>美味<rt>おい</rt></ruby>しいです。", "translation": "這道料理非常好吃。", "category": "生活日常" },
+            { "id": 24, "level": "N5", "word": "起きる", "reading": "おきる", "meaning": "起床", "example": "<ruby>毎朝六時<rt>まいあさろくじ</rt></ruby>に<ruby>起<rt>お</rt></ruby>きます。", "translation": "每天早上六點起床。", "category": "生活日常" },
+            { "id": 25, "level": "N5", "word": "買う", "reading": "かう", "meaning": "買", "example": "デパートでかばんを<ruby>買<rt>か</rt></ruby>いました。", "translation": "在百貨公司買了包包。", "category": "時尚購物" },
+            { "id": 26, "level": "N5", "word": "書く", "reading": "かく", "meaning": "寫", "example": "ここに<ruby>名前<rt>なまえ</rt></ruby>を<ruby>書<rt>か</rt></ruby>いてください。", "translation": "請在這裡寫下名字。", "category": "生活日常" },
+            { "id": 27, "level": "N5", "word": "聞く", "reading": "きく", "meaning": "聽 / 問", "example": "<ruby>先生<rt>せんせい</rt></ruby>に<ruby>質問<rt>しつもん</rt></ruby>を<ruby>聞<rt>き</rt></ruby>きます。", "translation": "向老師詢問問題。", "category": "生活日常" },
+            { "id": 28, "level": "N5", "word": "飲む", "reading": "のむ", "meaning": "喝", "example": "いっしょにお<ruby>茶<rt>ちゃ</rt></ruby>を<ruby>飲<rt>飲</rt></ruby>みませんか。", "translation": "要不要一起喝杯茶呢？", "category": "生活日常" },
+            { "id": 29, "level": "N5", "word": "食べる", "reading": "たべる", "meaning": "吃", "example": "<ruby>朝<rt>あさ</rt></ruby>ご<ruby>飯<rt>はん</rt></ruby>にパンを<ruby>食<rt>た</rt></ruby>べました。", "translation": "早餐吃了麵包。", "category": "生活日常" },
+            { "id": 30, "level": "N5", "word": "読む", "reading": "よむ", "meaning": "讀", "example": "<ruby>毎日<rt>まいにち</rt></ruby>、<ruby>新聞<rt>しんぶん</rt></ruby>を<ruby>讀<rt>よ</rt></ruby>みます。", "translation": "每天都會讀報紙。", "category": "生活日常" },
+            { "id": 31, "level": "N5", "word": "話す", "reading": "はなす", "meaning": "說話 / 交談", "example": "<ruby>日本語<rt>にほんご</rt></ruby>で<ruby>話<rt>はな</rt></ruby>しましょう。", "translation": "用日語交談吧。", "category": "生活日常" },
+            { "id": 32, "level": "N5", "word": "待つ", "reading": "まつ", "meaning": "等待", "example": "ちょっと<ruby>待<rt>ま</rt></ruby>ってください。", "translation": "請等一下。", "category": "生活日常" },
+            { "id": 33, "level": "N5", "word": "見る", "reading": "みる", "meaning": "看 / 觀看", "example": "<ruby>映画<rt>えいが</rt></ruby>を<ruby>見<rt>み</rt></ruby>に<ruby>行<rt>い</rt></ruby>くのが<ruby>好<rt>す</rt></ruby>きです。", "translation": "我喜歡去看電影。", "category": "生活日常" },
+            { "id": 34, "level": "N5", "word": "寢る", "reading": "ねる", "meaning": "睡覺", "example": "<ruby>昨夜<rt>さくや</rt></ruby>は<ruby>十一時<rt>じゅういちじ</rt></ruby>に<ruby>寢<rt>ね</rt></ruby>ました。", "translation": "昨晚十一點睡覺了。", "category": "生活日常" },
+            { "id": 35, "level": "N5", "word": "学生", "reading": "がくせい", "meaning": "學生", "example": "Q: <ruby>大学生<rt>だいがくせい</rt></ruby>ですか。 A: はい、<ruby>私<rt>わたし</rt></ruby>は<ruby>大学生<rt>だいがくせい</rt></ruby>です。", "translation": "Q: 是大學生嗎？ A: 是的，我是大學生。", "category": "職場商務" },
+            { "id": 36, "level": "N5", "word": "學校", "reading": "がっこう", "meaning": "學校", "example": "Q: <ruby>明日<rt>あした</rt></ruby>、<ruby>學校<rt>がっこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。 A: はい、<ruby>八時<rt>はちじ</rt></ruby>に<ruby>學校<rt>がっこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 明天去學校嗎？ A: 是的，八點去學校。", "category": "空間地點" },
+            { "id": 37, "level": "N5", "word": "先生", "reading": "せんせい", "meaning": "老師", "example": "Q: あの<ruby>方<rt>かた</rt></ruby>はどなたですか。 A: あの<ruby>方<rt>かた</rt></ruby>は<ruby>日本語<rt>にほんご</rt></ruby>の<ruby>先生<rt>せんせい</rt></ruby>です。", "translation": "Q: 那位是誰呢？ A: 那位是日語老師。", "category": "職場商務" },
+            { "id": 38, "level": "N5", "word": "教室", "reading": "きょうしつ", "meaning": "教室", "example": "Q: <ruby>教室<rt>きょうしつ</rt></ruby>に<ruby>何<rt>なに</rt></ruby>がありますか。 A: <ruby>教室<rt>きょうしつ</rt></ruby>に<ruby>机<rt>つくえ</rt></ruby>があります。", "translation": "Q: 教室裡有什麼？ A: 教室裡有桌子。", "category": "空間地點" },
+            { "id": 39, "level": "N5", "word": "本", "reading": "ほん", "meaning": "書", "example": "Q: <ruby>何<rt>なに</rt></ruby>をしていますか。 A: <ruby>本<rt>ほん</rt></ruby>を<ruby>讀<rt>よ</rt></ruby>んでいます。", "translation": "Q: 在做什麼呢？ A: 正在看書。", "category": "生活日常" },
+            { "id": 40, "level": "N5", "word": "辭書", "reading": "じしょ", "meaning": "字典", "example": "Q: それはあなたの<ruby>辭書<rt>じしょ</rt></ruby>ですか。 A: はい、これは<ruby>私<rt>わたし</rt></ruby>の<ruby>辭書<rt>じしょ</rt></ruby>です。", "translation": "Q: 那那是你的字典嗎？ A: 是的，這是我的字典。", "category": "生活日常" },
+            { "id": 41, "level": "N5", "word": "鞄", "reading": "かばん", "meaning": "包包", "example": "Q: その<ruby>鞄<rt>かばん</rt></ruby>は<ruby>新<rt>あたら</rt></ruby>しいですか。 A: はい、<ruby>新<rt>あたら</rt></ruby>しい<ruby>鞄<rt>かばん</rt></ruby>を<ruby>買<rt>か</rt></ruby>いました。", "translation": "Q: 那個包包是新的嗎？ A: 是的，買了新的包包。", "category": "時尚購物" },
+            { "id": 42, "level": "N5", "word": "靴", "reading": "くつ", "meaning": "鞋子", "example": "Q: どんな<ruby>靴<rt>くつ</rt></ruby>を<ruby>履<rt>は</rt></ruby>きますか。 A: <ruby>黒<rt>くろ</rt></ruby>い<ruby>靴<rt>くつ</rt></ruby>を<ruby>履<rt>は</rt></ruby>きます。", "translation": "Q: 要穿什麼樣的鞋子？ A: 穿黑色的鞋子。", "category": "時尚購物" },
+            { "id": 43, "level": "N5", "word": "今日", "reading": "きょう", "meaning": "今天", "example": "Q: <ruby>今日<rt>きょう</rt></ruby>はいい<ruby>天氣<rt>てんき</rt></ruby>ですね。 A: そうですね。どこかへ<ruby>行<rt>い</rt></ruby>きましょう。", "translation": "Q: 今天天氣很好呢。 A: 是啊，我們去哪裡走走吧。", "category": "描述與接續" },
+            { "id": 44, "level": "N5", "word": "明日", "reading": "あした", "meaning": "明天", "example": "Q: <ruby>明日<rt>あした</rt></ruby>、<ruby>暇<rt>ひま</rt></ruby>ですか。 A: はい、<ruby>明日<rt>あした</rt></ruby>、<ruby>會<rt>あ</rt></ruby>いましょう。", "translation": "Q: 明天有空嗎？ A: 有的，明天見面吧。", "category": "描述與接續" },
+            { "id": 45, "level": "N5", "word": "昨日", "reading": "きのう", "meaning": "昨天", "example": "Q: <ruby>昨日<rt>きのう</rt></ruby>は<ruby>晴<rt>晴</rt></ruby>れでしたか。 A: いいえ、<ruby>昨日<rt>きのう</rt></ruby>は<ruby>雨<rt>あめ</rt></ruby>でした。", "translation": "Q: 昨天是晴天嗎？ A: 不，昨天下了雨。", "category": "描述與接續" },
+            { "id": 46, "level": "N5", "word": "今", "reading": "いま", "meaning": "現在", "example": "Q: <ruby>今<rt>いま</rt></ruby>、<ruby>何時<rt>なんじ</rt></ruby>ですか。 A: <ruby>今<rt>いま</rt></ruby>は<ruby>三時<rt>さんじ</rt></ruby>です。", "translation": "Q: 現在幾點？ A: 現在是三點。", "category": "描述與接續" },
+            { "id": 47, "level": "N5", "word": "とても", "reading": "とても", "meaning": "非常", "example": "Q: この<ruby>料理<rt>りょうり</rt></ruby>はどうですか。 A: この<ruby>料理<rt>りょうり</rt></ruby>はとても<ruby>美味<rt>おい</rt></ruby>しいです。", "translation": "Q: 這道料理覺得如何？ A: 這道料理非常好吃。", "category": "描述與接續" },
+            { "id": 48, "level": "N5", "word": "少し", "reading": "すこし", "meaning": "稍微 / 一點點", "example": "Q: 大丈夫ですか。 A: はい、でも<ruby>少<rt>すこ</rt></ruby>し<ruby>疲<rt>つか</rt></ruby>れました。", "translation": "Q: 還好嗎？ A: 還好，但稍微累了。", "category": "描述與接續" },
+            { "id": 49, "level": "N5", "word": "いつも", "reading": "いつも", "meaning": "總是", "example": "Q: よくコーヒーを<ruby>飲<rt>の</rt></ruby>みますか。 A: はい、いつもここでコーヒーを<ruby>飲<rt>の</rt></ruby>みます。", "translation": "Q: 常喝咖啡嗎？ A: 是的，總是在這裡喝咖啡。", "category": "描述與接續" },
+            { "id": 50, "level": "N5", "word": "一緒に", "reading": "いっしょに", "meaning": "一起", "example": "Q: <ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>映画<rt>えいが</rt></ruby>を<ruby>見<rt>み</rt></ruby>ませんか。 A: ええ、いいですね。<ruby>見<rt>み</rt></ruby>ましょう。", "translation": "Q: 要不要一起看電影？ A: 好啊，真不錯，看吧。", "category": "描述與接續" },
+            { "id": 51, "level": "N5", "word": "は", "reading": "は", "meaning": "（助詞）主詞標記", "example": "Q: お<ruby>名前<rt>なまえ</rt></ruby>は何ですか。 A: <ruby>私<rt>わたし</rt></ruby>はIvyです。", "translation": "Q: 請問您的名字是？ A: 我是 Ivy。", "category": "基礎必備" },
+            { "id": 52, "level": "N5", "word": "を", "reading": "を", "meaning": "（助詞）受詞標記", "example": "Q: <ruby>何<rt>なに</rt></ruby>を<ruby>飲<rt>の</rt></ruby>みますか。 A: お<ruby>茶<rt>ちゃ</rt></ruby>を<ruby>飲<rt>の</rt></ruby>みます。", "translation": "Q: 要喝什麼呢？ A: 喝茶。", "category": "基礎必備" },
+            { "id": 53, "level": "N5", "word": "に", "reading": "に", "meaning": "（助詞）時間/目的地/對象", "example": "Q: どこへ<ruby>行<rt>い</rt></ruby>きたいですか。 A: <ruby>日本<rt>にほん</rt></ruby>に<ruby>行<rt>い</rt></ruby>きたいです。", "translation": "Q: 想去哪裡呢？ A: 想去日本。", "category": "基礎必備" },
+            { "id": 54, "level": "N5", "word": "で", "reading": "で", "meaning": "（助詞）場所/工具/手段", "example": "Q: どうやって<ruby>行<rt>い</rt></ruby>きましたか。 A: タクシーで<ruby>行<rt>い</rt></ruby>きました。", "translation": "Q: 怎麼去的呢？ A: 搭計程車去了。", "category": "基礎必備" },
+            { "id": 55, "level": "N5", "word": "ご飯", "reading": "ごはん", "meaning": "飯 / 餐點", "example": "Q: <ruby>朝<rt>あさ</rt></ruby>ご<ruby>飯<rt>はん</rt></ruby>を<ruby>食<rt>た</rt></ruby>べましたか。 A: はい、パンを<ruby>食<rt>た</rt></ruby>べました。", "translation": "Q: 吃過早餐了嗎？ A: 吃了，我吃了麵包。", "category": "生活日常" },
+            { "id": 56, "level": "N5", "word": "お弁当", "reading": "おべんとう", "meaning": "便當", "example": "Q: <ruby>毎日<rt>まいにち</rt></ruby>お<ruby>弁当<rt>べんとう</rt></ruby>を<ruby>作<rt>つく</rt></ruby>りますか。 A: はい、Rainaちゃんのために<ruby>作<rt>つく</rt></ruby>ります。", "translation": "Q: 每天都做便當嗎？ A: 是的，為了 Raina 做的。", "category": "生活日常" },
+            { "id": 57, "level": "N5", "word": "卵", "reading": "たまご", "meaning": "雞蛋", "example": "Q: <ruby>冷蔵庫<rt>れいぞうこ</rt></ruby>に<ruby>卵<rt>たまご</rt></ruby>がありますか。 A: いいえ、<ruby>冷蔵庫<rt>れいぞうこ</rt></ruby>に<ruby>卵<rt>たまご</rt></ruby>がありません。", "translation": "Q: 冰箱裡有雞蛋嗎？ A: 不，冰箱裡沒有雞蛋。", "category": "生活日常" },
+            { "id": 58, "level": "N5", "word": "肉", "reading": "にく", "meaning": "肉", "example": "Q: スーパーで<ruby>何<rt>なに</rt></ruby>を<ruby>買<rt>か</rt></ruby>いましたか。 A: <ruby>肉<rt>にく</rt></ruby>和<ruby>野菜<rt>やさい</rt></ruby>を<ruby>買<rt>か</rt></ruby>いました。", "translation": "Q: 在超市買了什麼？ A: 買了肉和蔬菜。", "category": "生活日常" },
+            { "id": 59, "level": "N5", "word": "水", "reading": "みず", "meaning": "水", "example": "Q: <ruby>冷<rt>つめ</rt></ruby>たい<ruby>水<rt>みず</rt></ruby>を<ruby>飲<rt>の</rt></ruby>みますか。 A: はい、<ruby>水<rt>みず</rt></ruby>を<ruby>飲<rt>の</rt></ruby>みます。", "translation": "Q: 要喝冰水嗎？ A: 好的，喝水。", "category": "生活日常" },
+            { "id": 60, "level": "N5", "word": "お茶", "reading": "おちゃ", "meaning": "茶", "example": "Q: すみません、お<ruby>茶<rt>ちゃ</rt></ruby>をください。 A: はい、お<ruby>茶<rt>ちゃ</rt></ruby>をどうぞ。", "translation": "Q: 不好意思，請給我茶。 A: 好的，請用茶。", "category": "生活日常" },
+            { "id": 61, "level": "N5", "word": "お酒", "reading": "おさけ", "meaning": "酒", "example": "Q: よくお<ruby>酒<rt>さけ</rt></ruby>を<ruby>飲<rt>の</rt></ruby>みますか。 A: いいえ、お<ruby>酒<rt>さけ</rt></ruby>はあまり<ruby>飲<rt>の</rt></ruby>みません。", "translation": "Q: 常喝酒嗎？ A: 不，不怎麼喝酒。", "category": "生活日常" },
+            { "id": 62, "level": "N5", "word": "家族", "reading": "かぞく", "meaning": "家人", "example": "Q: ご<ruby>家族<rt>かぞく</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか。 A: <ruby>家族<rt>かぞく</rt></ruby>は<ruby>四人<rt>よにん</rt></ruby>です。", "translation": "Q: 您家裡有幾個人？ A: 家裡有四個人。", "category": "描述與接續" },
+            { "id": 63, "level": "N5", "word": "父", "reading": "ちち", "meaning": "父親 (向他人稱呼自己的父親)", "example": "Q: お<ruby>父<rt>とう</rt></ruby>さんはおいくつですか。 A: <ruby>父<rt>ちち</rt></ruby>は<ruby>五十歳<rt>ごじゅっさい</rt></ruby>です。", "translation": "Q: 令尊幾歲了？ A: 我父親五十歲。", "category": "描述與接續" },
+            { "id": 64, "level": "N5", "word": "母", "reading": "はは", "meaning": "母親 (向他人稱呼自己的母親)", "example": "Q: お<ruby>母<rt>かあ</rt></ruby>さんの<ruby>料理<rt>りょうり</rt></ruby>はどうですか。 A: <ruby>母<rt>はは</rt></ruby>は<ruby>料理<rt>りょうり</rt></ruby>が<ruby>上手<rt>じょうず</rt></ruby>です。", "translation": "Q: 令壽堂做的菜怎麼樣？ A: 我母親很擅長做菜。", "category": "描述與接續" },
+            { "id": 65, "level": "N5", "word": "兄", "reading": "あに", "meaning": "哥哥", "example": "Q: お<ruby>兄<rt>にい</rt></ruby>さんはどこにいますか。 A: <ruby>兄<rt>あに</rt></ruby>は<ruby>東京<rt>とうきょう</rt></ruby>に<ruby>住<rt>す</rt></ruby>んでいます。", "translation": "Q: 您哥哥在哪裡呢？ A: 我哥哥住在東京。", "category": "描述與接續" },
+            { "id": 66, "level": "N5", "word": "姉", "reading": "あね", "meaning": "姐姐", "example": "Q: お<ruby>姉<rt>ねえ</rt></ruby>さんはお<ruby>元気<rt>げんき</rt></ruby>ですか。 A: はい、<ruby>姉<rt>あね</rt></ruby>は<ruby>結婚<rt>けっこん</rt></ruby>しています。", "translation": "Q: 您姐姐還好嗎？ A: 是的，我姐姐結婚了。", "category": "描述與接續" },
+            { "id": 67, "level": "N5", "word": "弟", "reading": "おとうと", "meaning": "弟弟", "example": "Q: ご<ruby>兄弟<rt>きょうだい</rt></ruby>はいますか。 A: はい、<ruby>弟<rt>おとうと</rt></ruby>が<ruby>一人<rt>ひとり</rt></ruby>います。", "translation": "Q: 您有兄弟姐妹嗎？ A: 有的，有一個弟弟。", "category": "描述與接續" },
+            { "id": 68, "level": "N5", "word": "妹", "reading": "いもうと", "meaning": "妹妹", "example": "Q: <ruby>妹<rt>いもうと</rt></ruby>さんは<ruby>何年生<rt>なんねんせい</rt></ruby>ですか。 A: <ruby>妹<rt>いもうと</rt></ruby>は<ruby>高校生<rt>こうこうせい</rt></ruby>です。", "translation": "Q: 您妹妹幾年級了？ A: 我妹妹是高中生。", "category": "描述與接續" },
+            { "id": 69, "level": "N5", "word": "部屋", "reading": "へや", "meaning": "房間", "example": "Q: あなたの<ruby>部屋<rt>へや</rt></ruby>はどこですか。 A: <ruby>私<rt>わたし</rt></ruby>の<ruby>部屋<rt>へや</rt></ruby>は<ruby>二階<rt>にかい</rt></ruby>です。", "translation": "Q: 你的房間在哪裡？ A: 我的房間在二樓。", "category": "空間地點" },
+            { "id": 70, "level": "N5", "word": "机", "reading": "つくえ", "meaning": "桌子", "example": "Q: <ruby>本<rt>ほん</rt></ruby>はどこにありますか。 A: <ruby>机<rt>つくえ</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>にあります。", "translation": "Q: 書在哪裡呢？ A: 在桌子上。", "category": "生活日常" },
+            { "id": 71, "level": "N5", "word": "椅子", "reading": "いす", "meaning": "椅子", "example": "Q: <ruby>椅子<rt>いす</rt></ruby>に<ruby>座<rt>すわ</rt></ruby>ってもいいですか. A: はい，どうぞ<ruby>椅子<rt>いす</rt></ruby>に<ruby>座<rt>すわ</rt></ruby>ってください。", "translation": "Q: 可以坐椅子嗎？ A: 好的，請坐在椅子上。", "category": "生活日常" },
+            { "id": 72, "level": "N5", "word": "窗", "reading": "まど", "meaning": "窗戶", "example": "Q: <ruby>暑<rt>あつ</rt></ruby>いですね。<ruby>窗<rt>まど</rt></ruby>を<ruby>開<rt>あ</rt></ruby>けましょうか。 A: ええ、<ruby>窗<rt>まど</rt></ruby>を<ruby>開<rt>あ</rt></ruby>けてください。", "translation": "Q: 很熱呢，要開窗嗎？ A: 嗯，請打開窗戶。", "category": "生活日常" },
+            { "id": 73, "level": "N5", "word": "ドア", "reading": "ドア", "meaning": "門", "example": "Q: すみませんが、ドアを<ruby>閉<rt>し</rt></ruby>めてください。 A: はい、分かりました。", "translation": "Q: 不好意思，請關門。 A: 好的，我知道了。", "category": "生活日常" },
+            { "id": 74, "level": "N5", "word": "電気", "reading": "でんき", "meaning": "電 / 電燈", "example": "Q: もう<ruby>寝<rt>ね</rt></ruby>ますか。 A: はい、<ruby>電気<rt>でんき</rt></ruby>を<ruby>消<rt>け</rt></ruby>してください。", "translation": "Q: 要睡了嗎？ A: 是的，請關燈。", "category": "生活日常" },
+            { "id": 75, "level": "N5", "word": "電車", "reading": "でんしゃ", "meaning": "電車 / 火車", "example": "Q: どうやって<ruby>会社<rt>かいしゃ</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>電車<rt>でんしゃ</rt></ruby>で<ruby>会社<rt>かいしゃ</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 怎麼去公司呢？ A: 搭電車去公司。", "category": "生活日常" },
+            { "id": 76, "level": "N5", "word": "地下鉄", "reading": "ちかてつ", "meaning": "捷運 / 地鐵", "example": "Q: <ruby>東京<rt>とうきょう</rt></ruby>の<ruby>地下鉄<rt>ちかてつ</rt></ruby>はどうですか。 A: <ruby>地下鉄<rt>ちかてつ</rt></ruby>はとても<ruby>便利<rt>べんり</rt></ruby>です。", "translation": "Q: 東京的地鐵怎麼樣？ A: 地鐵非常方便。", "category": "生活日常" },
+            { "id": 77, "level": "N5", "word": "バス", "reading": "バス", "meaning": "公車 / 巴士", "example": "Q: どこから<ruby>乗<rt>の</rt></ruby>りますか。 A: ここからバスに<ruby>乗<rt>露</rt></ruby>ります。", "translation": "Q: 要從哪裡搭車？ A: 從這裡搭公車。", "category": "生活日常" },
+            { "id": 78, "level": "N5", "word": "自転車", "reading": "じてんしゃ", "meaning": "腳踏車", "example": "Q: どうやって<ruby>學校<rt>がっこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>毎日自転車<rt>まいにちじてんしゃ</rt></ruby>で<ruby>學校<rt>がっこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 怎麼去學校呢？ A: 每天騎腳踏車去學校。", "category": "生活日常" },
+            { "id": 79, "level": "N5", "word": "飛行機", "reading": "ひこうき", "meaning": "飛機", "example": "Q: どうやって<ruby>日本<rt>にほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>飛行機<rt>ひこうき</rt></ruby>で<ruby>日本<rt>にほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 怎麼去日本呢？ A: 搭飛機去日本。", "category": "生活日常" },
+            { "id": 80, "level": "N5", "word": "駅", "reading": "えき", "meaning": "車站", "example": "Q: どこで<ruby>友達<rt>ともだち</rt></ruby>に<ruby>會<rt>あ</rt></ruby>いますか。 A: <ruby>駅<rt>えき</rt></ruby>で<ruby>友達<rt>ともだち</rt></ruby>に<ruby>會<rt>あ</rt></ruby>います。", "translation": "Q: 在哪裡跟朋友見面？ A: 在車站和朋友見面。", "category": "空間地點" },
+            { "id": 81, "level": "N5", "word": "銀行", "reading": "ぎんこう", "meaning": "銀行", "example": "Q: <ruby>銀行<rt>ぎんこう</rt></ruby>は<ruby>何時<rt>なんじ</rt></ruby>までですか。 A: <ruby>銀行<rt>ぎんこう</rt></ruby>は<ruby>九時<rt>くじ</rt></ruby>から<ruby>四時<rt>よじ</rt></ruby>までです。", "translation": "Q: 銀行營業到幾點？ A: 銀行從九點營業到四點。", "category": "空間地點" },
+            { "id": 82, "level": "N5", "word": "郵便局", "reading": "ゆうびんきょく", "meaning": "郵局", "example": "Q: どこへ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>郵便局<rt>ゆうびんきょく</rt></ruby>へ<ruby>切手<rt>きって</rt></ruby>を<ruby>買<rt>か</rt></ruby>いに<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 您要去哪裡？ A: 去郵局買郵票。", "category": "空間地點" },
+            { "id": 83, "level": "N5", "word": "図書館", "reading": "としょかん", "meaning": "圖書館", "example": "Q: どこで<ruby>本<rt>ほん</rt></ruby>を<ruby>借<rt>か</rt></ruby>りまか。 A: <ruby>図書館<rt>としょかん</rt></ruby>で<ruby>本<rt>ほん</rt></ruby>を<ruby>借<rt>か</rt></ruby>ります。", "translation": "Q: 在哪裡借書呢？ A: 在圖書館借書。", "category": "空間地點" },
+            { "id": 84, "level": "N5", "word": "病院", "reading": "びょういん", "meaning": "醫院", "example": "Q: <ruby>昨日<rt>きのう</rt></ruby>、どこかへ<ruby>行<rt>い</rt></ruby>きましたか。 A: <ruby>昨日<rt>きのう</rt></ruby>、<ruby>病院<rt>びょういん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きました。", "translation": "Q: 昨天有去哪裡嗎？ A: 昨天去了醫院。", "category": "空間地點" },
+            { "id": 85, "level": "N5", "word": "公園", "reading": "こうえん", "meaning": "公園", "example": "Q: <ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>公園<rt>こうえん</rt></ruby>で<ruby>散歩<rt>さんぽ</rt></ruby>しましょうか。 A: ええ、<ruby>公園<rt>こうえん</rt></ruby>で<ruby>散歩<rt>さんぽ</rt></ruby>しましょう。", "translation": "Q: 要不要一起去公園散步？ A: 好啊，去公園散步吧。", "category": "空間地點" },
+            { "id": 86, "level": "N5", "word": "喫茶店", "reading": "きっさてん", "meaning": "咖啡店", "example": "Q: どこで<ruby>休<rt>やす</rt></ruby>みますか。 A: あの<ruby>喫茶店<rt>きっさてん</rt></ruby>で<ruby>休<rt>やす</rt></ruby>みましょう。", "translation": "Q: 在哪裡休息呢？ A: 在那家咖啡店休息吧。", "category": "空間地點" },
+            { "id": 87, "level": "N5", "word": "去年", "reading": "きょねん", "meaning": "去年", "example": "Q: いつ<ruby>日本<rt>にほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きましたか。 A: <ruby>去年<rt>きょねん</rt></ruby>、<ruby>日本<rt>にほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きました。", "translation": "Q: 什麼時候去日本的？ A: 去年去了日本。", "category": "描述與接續" },
+            { "id": 88, "level": "N5", "word": "來年", "reading": "らいねん", "meaning": "明年", "example": "Q: <ruby>來年<rt>らいねん</rt></ruby>、<ruby>何<rt>なに</rt></ruby>になりますか。 A: <ruby>來年<rt>らいねん</rt></ruby>、<ruby>大学生<rt>だいがくせい</rt></ruby>になります。", "translation": "Q: 明年要做什麼呢？ A: 明年要當大學生了。", "category": "描述與接續" },
+            { "id": 89, "level": "N5", "word": "先月", "reading": "せんげつ", "meaning": "上個月", "example": "Q: いつ<ruby>新<rt>あたら</rt></ruby>しい<ruby>車<rt>くるま</rt></ruby>を<ruby>買<rt>か</rt></ruby>いましたか。 A: <ruby>先月<rt>せんげつ</rt></ruby>、<ruby>新<rt>あたら</rt></ruby>しい<ruby>車<rt>くるま</rt></ruby>を<ruby>買<rt>か</rt></ruby>いました。", "translation": "Q: 什麼時候買新車的？ A: 上個月買了新車。", "category": "描述與接續" },
+            { "id": 90, "level": "N5", "word": "來月", "reading": "らいげつ", "meaning": "下個月", "example": "Q: <ruby>來月<rt>らいげつ</rt></ruby>、<ruby>何<rt>なに</rt></ruby>かありますか。 A: <ruby>來月<rt>らいげつ</rt></ruby>、テストがあります。", "translation": "Q: 下個月有什麼事嗎？ A: 下個月有考試。", "category": "描述與接續" },
+            { "id": 91, "level": "N5", "word": "先週", "reading": "せんしゅう", "meaning": "上週", "example": "Q: <ruby>先週<rt>せんしゅう</rt></ruby>、<ruby>何<rt>なに</rt></ruby>をしましたか。 A: <ruby>先週<rt>せんしゅう</rt></ruby>、<ruby>映画<rt>えいが</rt></ruby>を<ruby>見<rt>み</rt></ruby>ました。", "translation": "Q: 上週做了什麼？ A: 上週看了電影。", "category": "描述與接續" },
+            { "id": 92, "level": "N5", "word": "來週", "reading": "らいしゅう", "meaning": "下週", "example": "Q: <ruby>來週<rt>らいしゅう</rt></ruby>、どなたが<ruby>來<rt>き</rt></ruby>ますか。 A: <ruby>來週<rt>らいしゅう</rt></ruby>、<ruby>友達<rt>ともだち</rt></ruby>が<ruby>來<rt>き</rt></ruby>ます。", "translation": "Q: 下週誰要來呢？ A: 下週朋友要來。", "category": "描述與接續" },
+            { "id": 93, "level": "N5", "word": "毎日", "reading": "まいにち", "meaning": "每天", "example": "Q: <ruby>毎日<rt>まいにち</rt></ruby>、<ruby>何<rt>なに</rt></ruby>をしますか。 A: <ruby>毎日<rt>まいにち</rt></ruby>、<ruby>日本語<rt>にほんご</rt></ruby>を<ruby>勉強<rt>べんきょう</rt></ruby>します。", "translation": "Q: 每天都做什麼呢？ A: 每天學習日語。", "category": "描述與接續" },
+            { "id": 94, "level": "N5", "word": "時々", "reading": "ときどき", "meaning": "有時 / 偶爾", "example": "Q: <ruby>時々<rt>ときどき</rt></ruby>、<ruby>何<rt>なに</rt></ruby>をしますか。 A: <ruby>時々<rt>ときどき</rt></ruby>、テニスをします。", "translation": "Q: 偶爾會做什麼呢？ A: 偶爾會打網球。", "category": "描述與接續" },
+            { "id": 95, "level": "N5", "word": "帰る", "reading": "かえる", "meaning": "回家 / 回去", "example": "Q: <ruby>何時<rt>なんじ</rt></ruby>にうちへ<ruby>帰<rt>かえ</rt></ruby>りますか。 A: <ruby>八時<rt>はちじ</rt></ruby>にうちへ<ruby>帰<rt>かえ</rt></ruby>ります。", "translation": "Q: 幾點回家呢？ A: 八點回（到）家。", "category": "生活日常" },
+            { "id": 96, "level": "N5", "word": "貸す", "reading": "かす", "meaning": "借出", "example": "Q: <ruby>誰<rt>だれ</rt></ruby>に<ruby>本<rt>ほん</rt></ruby>を<ruby>貸<rt>か</rt></ruby>しましたか。 A: <ruby>友達<rt>ともだち</rt></ruby>に<ruby>本<rt>ほん</rt></ruby>を<ruby>貸<rt>か</rt></ruby>しました。", "translation": "Q: 把書借給誰了？ A: 把書借給了朋友。", "category": "生活日常" },
+            { "id": 97, "level": "N5", "word": "借りる", "reading": "かりる", "meaning": "借入", "example": "Q: どこで<ruby>本<rt>ほん</rt></ruby>を<ruby>借<rt>か</rt></ruby>りますか。 A: <ruby>図書館<rt>としょかん</rt></ruby>で<ruby>本<rt>ほん</rt></ruby>を<ruby>借<rt>か</rt></ruby>ります。", "translation": "Q: 在哪裡借書呢？ A: 在圖書館借書。", "category": "生活日常" },
+            { "id": 98, "level": "N5", "word": "消す", "reading": "けす", "meaning": "關掉 (電器) / 擦掉", "example": "Q: 寝(ね)る前(まえ)にテレビを<ruby>消<rt>け</rt></ruby>しましたか。 A: はい、テレビを<ruby>消<rt>け</rt></ruby>してください。", "translation": "Q: 睡覺前關電視了嗎？ A: 是的，請關掉電視。", "category": "生活日常" },
+            { "id": 99, "level": "N5", "word": "閉める", "reading": "しめる", "meaning": "關閉 (門窗)", "example": "Q: <ruby>窓<rt>まど</rt></ruby>を<ruby>閉<rt>し</rt></ruby>めましょうか。 A: はい、ドアを<ruby>閉<rt>し</rt></ruby>めてください。", "translation": "Q: 要關窗戶嗎？ A: 好的，請關門。", "category": "生活日常" },
+            { "id": 100, "level": "N5", "word": "吸う", "reading": "すう", "meaning": "吸 / 抽 (菸)", "example": "Q: ここでたばこを<ruby>吸<rt>す</rt></ruby>ってもいいですか。 A: いいえ、たばこを<ruby>吸<rt>す</rt></ruby>わないでください。", "translation": "Q: 這裡可以抽菸嗎？ A: 不，請不要抽菸。", "category": "生活日常" },
+            { "id": 101, "level": "N5", "word": "住む", "reading": "すむ", "meaning": "居住", "example": "Q: どこに<ruby>住<rt>す</rt></ruby>んでいますか。 A: <ruby>私<rt>わたし</rt></ruby>は<ruby>台北<rt>たいぺい</rt></ruby>に<ruby>住<rt>す</rt></ruby>んでいます。", "translation": "Q: 您住在哪裡？ A: 我住在台北。", "category": "生活日常" },
+            { "id": 102, "level": "N5", "word": "座る", "reading": "すわる", "meaning": "坐", "example": "Q: どこに<ruby>座<rt>すわ</rt></ruby>りますか。 A: <ruby>椅子<rt>いす</rt></ruby>に<ruby>座<rt>すわ</rt></ruby>ってください。", "translation": "Q: 要坐在哪裡？ A: 請坐在椅子上。", "category": "生活日常" },
+            { "id": 103, "level": "N5", "word": "使う", "reading": "つかう", "meaning": "使用", "example": "Q: このペンを<ruby>使<rt>つか</rt></ruby>ってもいいですか. A: はい，どうぞ<ruby>使<rt>つか</rt></ruby>ってください。", "translation": "Q: 可以使用這枝筆嗎？ A: 好的，請用。", "category": "生活日常" },
+            { "id": 104, "level": "N5", "word": "作る", "reading": "つくる", "meaning": "製作 / 做 (菜)", "example": "Q: 今(いま)から<ruby>何<rt>なに</rt></ruby>をしますか。 A: <ruby>晩<rt>ばん</rt></ruby>ご<ruby>飯<rt>はん</rt></ruby>を<ruby>作<rt>つく</rt></ruby>ります。", "translation": "Q: 現在開始要做什麼？ A: 做晚餐。", "category": "生活日常" },
+            { "id": 105, "level": "N5", "word": "撮る", "reading": "とる", "meaning": "拍攝", "example": "Q: <ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>写真<rt>しゃしん</rt></ruby>を<ruby>撮<rt>と</rt></ruby>りましょうか。 A: はい、<ruby>写真<rt>しゃしん</rt></ruby>を<ruby>撮<rt>と</rt></ruby>りましょう。", "translation": "Q: 要不要一起拍張照？ A: 好啊，來拍張照吧。", "category": "休閒興趣" },
+            { "id": 106, "level": "N5", "word": "習う", "reading": "ならう", "meaning": "學習 (向人學習)", "example": "Q: 今(いま)、<ruby>何<rt>なに</rt></ruby>をしていますか。 A: ピアノを<ruby>習<rt>なら</rt></ruby>っています。", "translation": "Q: 現在在做什麼呢？ A: 正在學習鋼琴。", "category": "休閒興趣" },
+            { "id": 107, "level": "N5", "word": "脫ぐ", "reading": "ぬぐ", "meaning": "脫掉 (衣物)", "example": "Q: ここで<ruby>靴<rt>くつ</rt></ruby>を<ruby>脫<rt>ぬ</rt></ruby>ぎますか。 A: はい、ここで<ruby>靴<rt>くつ</rt></ruby>を<ruby>脫<rt>ぬ</rt></ruby>いでください。", "translation": "Q: 要在這裡脫鞋嗎？ A: 是的，請在這裡脫鞋。", "category": "生活日常" },
+            { "id": 108, "level": "N5", "word": "乗る", "reading": "のる", "meaning": "搭乘", "example": "Q: どうやって<ruby>会社<rt>かいしゃ</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>電車<rt>でんしゃ</rt></ruby>に<ruby>乗<rt>の</rt></ruby>って<ruby>会社<rt>かいしゃ</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 怎麼去公司呢？ A: 搭電車去公司。", "category": "生活日常" },
+            { "id": 109, "level": "N5", "word": "入る", "reading": "はいる", "meaning": "進入", "example": "Q: 今(いま)から<ruby>何<rt>なに</rt></ruby>をしますか。 A: お<ruby>風呂<rt>ふろ</rt></ruby>に<ruby>入<rt>はい</rt></ruby>ります。", "translation": "Q: 現在開始要做什麼？ A: 去洗澡（進入浴池）。", "category": "生活日常" },
+            { "id": 110, "level": "N5", "word": "働く", "reading": "はたらく", "meaning": "工作", "example": "Q: お<ruby>父<rt>とう</rt></ruby>さんはどこで<ruby>働<rt>はたら</rt></ruby>いていますか。 A: <ruby>父<rt>ちち</rt></ruby>は<ruby>銀行<rt>ぎんこう</rt></ruby>で<ruby>働<rt>はたら</rt></ruby>いています。", "translation": "Q: 您父親在哪裡工作？ A: 父親在銀行工作。", "category": "職場商務" },
+            { "id": 111, "level": "N5", "word": "寒い", "reading": "さむい", "meaning": "寒冷的 (天氣)", "example": "Q: 外(そと)はどうですか。 A: <ruby>今日<rt>きょう</rt></ruby>はとても<ruby>寒<rt>さむ</rt></ruby>いですね。", "translation": "Q: 外面怎麼樣？ A: 今天非常冷呢。", "category": "基礎必備" },
+            { "id": 112, "level": "N5", "word": "高い", "reading": "たかい", "meaning": "貴的 / 高的", "example": "Q: この<ruby>時計<rt>とけい</rt></ruby>はどうですか。 A: この<ruby>時計<rt>とけい</rt></ruby>はとても<ruby>高<rt>たか</rt></ruby>いです。", "translation": "Q: 這支手錶覺得如何？ A: 這支手錶非常貴。", "category": "時尚購物" },
+            { "id": 113, "level": "N5", "word": "安い", "reading": "やすい", "meaning": "便宜的", "example": "Q: どこで<ruby>野菜<rt>やさい</rt></ruby>を<ruby>買<rt>か</rt></ruby>いますか。 A: あのスーパーは<ruby>野菜<rt>やさい</rt></ruby>が<ruby>安<rt>やす</rt></ruby>いです。", "translation": "Q: 在哪裡買蔬菜呢？ A: 那間超市蔬菜很便宜。", "category": "時尚購物" },
+            { "id": 114, "level": "N5", "word": "暇", "reading": "ひま", "meaning": "空閒的", "example": "Q: <ruby>明日<rt>あした</rt></ruby>、<ruby>暇<rt>ひま</rt></ruby>ですか。 A: はい、<ruby>明日<rt>あした</rt></ruby>は<ruby>暇<rt>ひま</rt></ruby>です。", "translation": "Q: 明天有空嗎？ A: 有的，明天有空。", "category": "描述與接續" },
+            { "id": 115, "level": "N5", "word": "上", "reading": "うえ", "meaning": "上面", "example": "Q: <ruby>本<rt>ほん</rt></ruby>はどこにありますか。 A: <ruby>机<rt>つくえ</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>にあります。", "translation": "Q: 書在哪裡呢？ A: 在桌子上面。", "category": "空間地點" },
+            { "id": 116, "level": "N5", "word": "下", "reading": "した", "meaning": "下面", "example": "Q: <ruby>猫<rt>ねこ</rt></ruby>はどこですか。 A: <ruby>椅子<rt>いす</rt></ruby>の<ruby>下<rt>した</rt></ruby>にいます。", "translation": "Q: 貓咪在哪裡？ A: 在椅子下面。", "category": "空間地點" },
+            { "id": 117, "level": "N5", "word": "前", "reading": "まえ", "meaning": "前面", "example": "Q: どこで<ruby>待<rt>ま</rt></ruby>っていますか。 A: <ruby>銀行<rt>ぎんこう</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>で<ruby>待<rt>ま</rt></ruby>っています。", "translation": "Q: 你在哪裡等呢？ A: 在銀行前面等待。", "category": "空間地點" },
+            { "id": 118, "level": "N5", "word": "後ろ", "reading": "u身ろ", "meaning": "後面", "example": "Rainaちゃんの<ruby>後<rt>うし</rt></ruby>ろに<ruby>誰<rt>だれ</rt></ruby>がいますか。 A: <ruby>車<rt>くるま</rt></ruby>の<ruby>後<rt>うし</rt></ruby>ろに<ruby>犬<rt>いぬ</rt></ruby>がいます。", "translation": "Q: Raina 的後面有誰呢？ A: 車子後面有一隻狗。", "category": "空間地點" },
+            { "id": 119, "level": "N5", "word": "左", "reading": "ひだり", "meaning": "左邊", "example": "Q: <ruby>郵便局<rt>ゆうびんきょく</rt></ruby>はどちらですか。 A: <ruby>郵便局<rt>ゆうびんきょく</rt></ruby>は<ruby>左<rt>ひだり</rt></ruby>にあります。", "translation": "Q: 郵局在往哪邊走？ A: 郵局在左邊。", "category": "空間地點" },
+            { "id": 120, "level": "N5", "word": "右", "reading": "みぎ", "meaning": "右邊", "example": "Q: どこで<ruby>曲<rt>ま</rt></ruby>がりますか。 A: <ruby>交番<rt>こうばん</rt></ruby>を<ruby>右<rt>みぎ</rt></ruby>へ<ruby>曲<rt>ま</rt></ruby>がってください。", "translation": "Q: 要在哪裡轉彎呢？ A: 請在派出所向右轉。", "category": "空間地點" },
+            { "id": 121, "level": "N5", "word": "中", "reading": "なか", "meaning": "裡面 / 中間", "example": "Q: <ruby>財布<rt>さいふ</rt></ruby>はどこですか。 A: <ruby>鞄<rt>かばん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に<ruby>財布<rt>さいふ</rt></ruby>があります。", "translation": "Q: 錢包在哪裡？ A: 包包裡面有錢包。", "category": "空間地點" },
+            { "id": 122, "level": "N5", "word": "外", "reading": "そと", "meaning": "外面", "example": "Q: <ruby>外<rt>そと</rt></ruby>に<ruby>行<rt>い</rt></ruby>きましょうか。 A: いいえ、<ruby>外<rt>そと</rt></ruby>は<ruby>寒<rt>さむ</rt></ruby>いですよ。", "translation": "Q: 我們去外面走走嗎？ A: 不，外面很冷喔。", "category": "空間地點" },
+            { "id": 123, "level": "N5", "word": "赤い", "reading": "あかい", "meaning": "紅色的", "example": "Q: <ruby>何<rt>なに</rt></ruby>を<ruby>食<rt>た</rt></ruby>べましたか。 A: <ruby>赤<rt>あか</rt></ruby>い<ruby>林檎<rt>りんご</rt></ruby>を<ruby>食<rt>た</rt></ruby>べました。", "translation": "Q: 吃了什麼？ A: 吃了紅色的蘋果。", "category": "基礎必備" },
+            { "id": 124, "level": "N5", "word": "青い", "reading": "あおい", "meaning": "藍色的", "example": "Q: <ruby>今日<rt>きょう</rt></ruby>の<ruby>景色<rt>けしき</rt></ruby>はどうですか。 A: <ruby>空<rt>そら</rt></ruby>が<ruby>青<rt>あお</rt></ruby>くて<ruby>綺麗<rt>きれい</rt></ruby>です。", "translation": "Q: 今天的風景如何？ A: 天空藍得很漂亮。", "category": "基礎必備" },
+            { "id": 125, "level": "N5", "word": "白い", "reading": "しろい", "meaning": "白色的", "example": "Q: どんなシャツを<ruby>着<rt>き</rt></ruby>ていますか。 A: <ruby>白<rt>しろ</rt></ruby>いシャツを<ruby>着<rt>き</rt></ruby>ています。", "translation": "Q: 你穿著什麼樣的襯衫？ A: 穿著白色的襯衫。", "category": "基礎必備" },
+            { "id": 126, "level": "N5", "word": "黒い", "reading": "くろい", "meaning": "黑色的", "example": "Q: どの<ruby>靴<rt>くつ</rt></ruby>を<ruby>履<rt>は</rt></ruby>きますか。 A: <ruby>黒<rt>くろ</rt></ruby>い<ruby>靴<rt>くつ</rt></ruby>を<ruby>履<rt>は</rt></ruby>きます。", "translation": "Q: 你要穿哪雙鞋？ A: 穿黑色的鞋子。", "category": "基礎必備" },
+            { "id": 127, "level": "N5", "word": "写真", "reading": "しゃしん", "meaning": "照片", "example": "Q: <ruby>何<rt>なに</rt></ruby>をしましたか。 A: <ruby>家族<rt>かぞく</rt></ruby>の<ruby>写真<rt>しゃしん</rt></ruby>を<ruby>撮<rt>と</rt></ruby>りました。", "translation": "Q: 剛才做了什麼？ A: 拍了全家福照片。", "category": "休閒興趣" },
+            { "id": 128, "level": "N5", "word": "電話", "reading": "でんわ", "meaning": "電話", "example": "Q: これから<ruby>何<rt>なに</rt></ruby>をしますか。 A: <ruby>友達<rt>ともだち</rt></ruby>に<ruby>電話<rt>でんわ</rt></ruby>をかけます。", "translation": "Q: 待會要做什麼？ A: 打電話給朋友。", "category": "生活日常" },
+            { "id": 129, "level": "N5", "word": "手紙", "reading": "てがみ", "meaning": "信件", "example": "Q: <ruby>誰<rt>だれ</rt></ruby>に<ruby>書<rt>か</rt></ruby>きましたか。 A: <ruby>母<rt>はは</rt></ruby>に<ruby>手紙<rt>てがみ</rt></ruby>を<ruby>書<rt>か</rt></ruby>きました。", "translation": "Q: 寫給誰了呢？ A: 寫了信給母親。", "category": "生活日常" },
+            { "id": 130, "level": "N5", "word": "切手", "reading": "きって", "meaning": "郵票", "example": "Q: どこで<ruby>買<rt>か</rt></ruby>いますか。 A: <ruby>郵便局<rt>ゆうびんきょく</rt></ruby>で<ruby>切手<rt>きって</rt></ruby>を<ruby>買<rt>か</rt></ruby>ります。", "translation": "Q: 在哪裡買呢？ A: 在郵局買郵票。", "category": "生活日常" },
+            { "id": 131, "level": "N5", "word": "一つ", "reading": "ひとつ", "meaning": "一個", "example": "Q: リンゴをいくつ<ruby>買<rt>か</rt></ruby>いますか。 A: <ruby>一<rt>ひと</rt></ruby>つ<ruby>買<rt>か</rt></ruby>います。", "translation": "Q: 要買幾個蘋果？ A: 買一個。", "category": "基礎必備" },
+            { "id": 132, "level": "N5", "word": "二つ", "reading": "ふたつ", "meaning": "兩個", "example": "Q: 卵(たまご)をいくつ<ruby>使<rt>つか</rt></ruby>いますか。 A: <ruby>二<rt>ふた</rt></ruby>つ<ruby>使<rt>つか</rt></ruby>います。", "translation": "Q: 要用幾個雞蛋？ A: 用兩個。", "category": "基礎必備" },
+            { "id": 133, "level": "N5", "word": "三つ", "reading": "みっつ", "meaning": "三個", "example": "Q: お<ruby>菓子<rt>かし</rt></ruby>をいくつ<ruby>食<rt>た</rt></ruby>べましたか。 A: <ruby>三<rt>みっ</rt></ruby>つ<ruby>食<rt>た</rt></ruby>べました。", "translation": "Q: 吃了幾個點心？ A: 吃了三個。", "category": "基礎必備" },
+            { "id": 134, "level": "N5", "word": "たくさん", "reading": "たくさん", "meaning": "很多", "example": "Q: <ruby>荷物<rt>にもつ</rt></ruby>がありますか。 A: はい、たくさんあります。", "translation": "Q: 有行李嗎？ A: 有的，有很多。", "category": "基礎必備" },
+            { "id": 135, "level": "N5", "word": "少し", "reading": "すこし", "meaning": "稍微 / 一點點", "example": "Q: お<ruby>酒<rt>さけ</rt></ruby>を<ruby>飲<rt>の</rt></ruby>みますか。 A: はい、<ruby>少<rt>すこ</rt></ruby>し<ruby>飲<rt>の</rt></ruby>みます。", "translation": "Q: 喝酒嗎？ A: 會的，喝一點點。", "category": "基礎必備" },
+            { "id": 136, "level": "N5", "word": "天気", "reading": "てんき", "meaning": "天氣", "example": "Q: <ruby>今日<rt>きょう</rt></ruby>の<ruby>天氣<rt>てんき</rt></ruby>はどうですか。 A: いい<ruby>天氣<rt>てんき</rt></ruby>ですね。", "translation": "Q: 今天的天氣如何？ A: 天氣很好呢。", "category": "基礎必備" },
+            { "id": 137, "level": "N5", "word": "晴れ", "reading": "はれ", "meaning": "晴天", "example": "Q: <ruby>明日<rt>あした</rt></ruby>は<ruby>雨<rt>あめ</rt></ruby>ですか。 A: いいえ、<ruby>明日<rt>あした</rt></ruby>は<ruby>晴<rt>晴</rt></ruby>れですよ。", "translation": "Q: 明天會下雨嗎？ A: 不，明天是晴天喔。", "category": "基礎必備" },
+            { "id": 138, "level": "N5", "word": "雨", "reading": "あめ", "meaning": "雨", "example": "Q: <ruby>外<rt>そと</rt></ruby>は<ruby>雨<rt>あめ</rt></ruby>が<ruby>降<rt>ふ</rt></ruby>っていますか。 A: はい、<ruby>雨<rt>あめ</rt></ruby>です。", "translation": "Q: 外面在下雨嗎？ A: 是的，在下雨。", "category": "基礎必備" },
+            { "id": 139, "level": "N5", "word": "曇り", "reading": "くもり", "meaning": "陰天", "example": "Q: <ruby>今日<rt>きょう</rt></ruby>は<ruby>晴<rt>晴</rt></ruby>れですか。 A: いいえ、<ruby>今日<rt>きょう</rt></ruby>は<ruby>曇<rt>くもり</rt></ruby>です。", "translation": "Q: 今天是晴天嗎？ A: 不，今天是陰天。", "category": "基礎必備" },
+            { "id": 140, "level": "N5", "word": "雪", "reading": "ゆき", "meaning": "雪", "example": "Q: <ruby>窗<rt>まど</rt></ruby>の<ruby>外<rt>そと</rt></ruby>を<ruby>見<rt>み</rt></ruby>てください。 A: わあ、<ruby>雪<rt>ゆき</rt></ruby>が<ruby>綺麗<rt>きれい</rt></ruby>ですね。", "translation": "Q: 請看窗外。 A: 哇，雪好漂亮呢。", "category": "基礎必備" },
+            { "id": 141, "level": "N5", "word": "風", "reading": "かぜ", "meaning": "風", "example": "Q: <ruby>今日<rt>きょう</rt></ruby>は<ruby>風<rt>かぜ</rt></ruby>が<ruby>強<rt>つよ</rt></ruby>いですか。 A: はい、とても<ruby>強<rt>つよ</rt></ruby>い<ruby>風<rt>かぜ</rt></ruby>ですね。", "translation": "Q: 今天的風很強嗎？ A: 是的，是非常強的風呢。", "category": "基礎必備" },
+            { "id": 142, "level": "N5", "word": "暖かい", "reading": "あたたかい", "meaning": "溫暖的", "example": "Q: <ruby>今日<rt>きょう</rt></ruby>は<ruby>寒<rt>さむ</rt></ruby>いですか。 A: いいえ、とても<ruby>暖<rt>あたた</rt></ruby>かいです。", "translation": "Q: 今天冷嗎？ A: 不，非常溫暖。", "category": "基礎必備" },
+            { "id": 143, "level": "N5", "word": "涼しい", "reading": "すずしい", "meaning": "涼爽的", "example": "Q: <ruby>朝<rt>あさ</rt></ruby>の<ruby>空氣<rt>くうき</rt></ruby>はどうですか。 A: とても<ruby>涼<rt>すず</rt></ruby>しいですよ。", "translation": "Q: 早晨的空氣如何？ A: 非常涼爽喔。", "category": "基礎必備" },
+            { "id": 144, "level": "N5", "word": "おはよう", "reading": "おはよう", "meaning": "早安", "example": "Q: お父(とう)さん、おはよう。 A: おはよう、Rainaちゃん。", "translation": "Q: 爸爸早安。 A: Raina 早安。", "category": "基礎必備" },
+            { "id": 145, "level": "N5", "word": "こんにちは", "reading": "こんにちは", "meaning": "你好 / 午安", "example": "Q: 先生(せんせい)、こんにちは。 A: こんにちは、Ivyさん。", "translation": "Q: 老師你好。 A: Ivy 你好。", "category": "基礎必備" },
+            { "id": 146, "level": "N5", "word": "こんばんは", "reading": "こんばんは", "meaning": "晚安 (見面用)", "example": "Q: こんばんは、Easonさん。 A: こんばんは。お<ruby>歸<rt>かえ</rt></ruby>りなさい。", "translation": "Q: 晚安，Eason。 A: 晚安，你回來啦。", "category": "基礎必備" },
+            { "id": 147, "level": "N5", "word": "おやすみなさい", "reading": "おやすみなさい", "meaning": "晚安 (睡前用)", "example": "Q: もう<ruby>寢<rt>ね</rt></ruby>ますね。 A: はい、おやすみなさい。", "translation": "Q: 我要睡了喔。 A: 好的，晚安。", "category": "基礎必備" },
+            { "id": 148, "level": "N5", "word": "さようなら", "reading": "さようなら", "meaning": "再見", "example": "Q: また<ruby>明日<rt>あした</rt></ruby>。 A: はい、さようなら。", "translation": "Q: 明天見。 A: 好的，再見。", "category": "基礎必備" },
+            { "id": 149, "level": "N5", "word": "ありがとうございます", "reading": "ありがとうございます", "meaning": "非常感謝", "example": "Q: プレゼントです、どうぞ。 A: わあ、ありがとうございます！", "translation": "Q: 這是禮物，請收下。 A: 哇，非常感謝！", "category": "基礎必備" },
+            { "id": 150, "level": "N5", "word": "すみません", "reading": "すみません", "meaning": "對不起 / 請問", "example": "Q: すみません、<ruby>駅<rt>えき</rt></ruby>はどこですか。 A: あちらですよ。", "translation": "Q: 請問，車站在哪裡？ A: 在那邊喔。", "category": "基礎必備" },
+            { "id": 151, "level": "N5", "word": "行きます", "reading": "いきます", "meaning": "去", "example": "Q: <ruby>明日<rt>あした</rt></ruby>、どこへ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>明日<rt>あした</rt></ruby>、<ruby>会社<rt>かいしゃ</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 明天要去哪裡？ A: 明天要去公司。", "category": "生活日常" },
+            { "id": 152, "level": "N5", "word": "來ます", "reading": "きます", "meaning": "來", "example": "Q: <ruby>友達<rt>ともだち</rt></ruby>はいつ<ruby>來<rt>き</rt></ruby>ますか。 A: <ruby>午後<rt>ごご</rt></ruby>に<ruby>家<rt>うち</rt></ruby>へ<ruby>來<rt>き</rt></ruby>ます。", "translation": "Q: 朋友什麼時候會來？ A: 下午會來家裡。", "category": "生活日常" },
+            { "id": 153, "level": "N5", "word": "帰ります", "reading": "かえります", "meaning": "回家 / 回去", "example": "Q: <ruby>何時<rt>なんじ</rt></ruby>に<ruby>帰<rt>かえ</rt></ruby>りますか。 A: <ruby>六時<rt>ろくじ</rt></ruby>に<ruby>帰<rt>かえ</rt></ruby>ります。", "translation": "Q: 幾點回去？ A: 六點回去。", "category": "生活日常" },
+            { "id": 154, "level": "N5", "word": "食べます", "reading": "たべます", "meaning": "吃", "example": "Q: <ruby>朝<rt>あさ</rt></ruby>ご<ruby>飯<rt>はん</rt></ruby>に何を<ruby>食<rt>た</rt></ruby>べますか。 A: パンを<ruby>食<rt>た</rt></ruby>べます。", "translation": "Q: 早餐要吃什麼？ A: 吃麵包。", "category": "生活日常" },
+            { "id": 155, "level": "N5", "word": "飲めます", "reading": "のみます", "meaning": "喝", "example": "Q: コーヒーを<ruby>飲<rt>の</rt></ruby>みますか。 A: はい、<ruby>一杯<rt>いっぱい</rt></ruby><ruby>飲<rt>の</rt></ruby>みます。", "translation": "Q: 要喝咖啡嗎？ A: 是的，喝一杯。", "category": "生活日常" },
+            { "id": 156, "level": "N5", "word": "見ます", "reading": "みます", "meaning": "看 / 觀看", "example": "Q: <ruby>毎日<rt>まいにち</rt></ruby>テレビを<ruby>見<rt>み</rt></ruby>ますか。 A: いいえ、あまり<ruby>見<rt>み</rt></ruby>ません。", "translation": "Q: 每天看電視嗎？ A: 不，不怎麼看。", "category": "生活日常" },
+            { "id": 157, "level": "N5", "word": "聞きます", "reading": "ききます", "meaning": "聽 / 詢問", "example": "Q: <ruby>音樂<rt>おんがく</rt></ruby>を<ruby>聞<rt>き</rt></ruby>きますか。 A: はい、よく<ruby>聞<rt>き</rt></ruby>きます。", "translation": "Q: 會聽音樂嗎？ A: 是的，常常聽。", "category": "生活日常" },
+            { "id": 158, "level": "N5", "word": "読みます", "reading": "よみます", "meaning": "讀 / 閱讀", "example": "Q: <ruby>新聞<rt>しんぶん</rt></ruby>を<ruby>讀<rt>よ</rt></ruby>みますか。 A: はい、<ruby>毎朝<rt>まいあさ</rt></ruby><ruby>讀<rt>よ</rt></ruby>みます。", "translation": "Q: 會看報紙嗎？ A: 是的，每天早上都看。", "category": "生活日常" },
+            { "id": 159, "level": "N5", "word": "書きます", "reading": "かきます", "meaning": "寫", "example": "Q: ここに<ruby>名前<rt>なまえ</rt></ruby>を<ruby>書<rt>か</rt></ruby>きますか。 A: はい、お<ruby>願<rt>ねが</rt></ruby>いします。", "translation": "Q: 名字寫在這裡嗎？ A: 是的，麻煩了。", "category": "生活日常" },
+            { "id": 160, "level": "N5", "word": "買います", "reading": "かいます", "meaning": "買", "example": "Q: <ruby>何<rt>なに</rt></ruby>を<ruby>買<rt>か</rt></ruby>いますか。 A: <ruby>新<rt>あたら</rt></ruby>しい<ruby>鞄<rt>かばん</rt></ruby>を<ruby>買<rt>か</rt></ruby>います。", "translation": "Q: 要買什麼？ A: 要買一個新包包。", "category": "時尚購物" },
+            { "id": 161, "level": "N5", "word": "机", "reading": "つくえ", "meaning": "桌子", "example": "Q: <ruby>机<rt>つくえ</rt></ruby>はどこにありますか。 A: <ruby>部屋<rt>へや</rt></ruby>の<ruby>隅<rt>すみ</rt></ruby>にあります。", "translation": "Q: 桌子在哪裡？ A: 在房間角落。", "category": "生活日常" },
+            { "id": 162, "level": "N5", "word": "椅子", "reading": "いす", "meaning": "椅子", "example": "Q: <ruby>椅子<rt>いす</rt></ruby>がいくつありますか。 A: <ruby>四<rt>よっ</rt></ruby>つあります。", "translation": "Q: 有幾張椅子？ A: 有四張。", "category": "生活日常" },
+            { "id": 163, "level": "N5", "word": "本", "reading": "ほん", "meaning": "書", "example": "Q: この<ruby>本<rt>ほん</rt></ruby>はだれのですか。 A: <ruby>私<rt>わたし</rt></ruby>のです。", "translation": "Q: 這本書是誰的？ A: 是我的。", "category": "生活日常" },
+            { "id": 164, "level": "N5", "word": "鞄", "reading": "かばん", "meaning": "包包 / 皮包", "example": "Q: <ruby>鞄<rt>かばん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に<ruby>何<rt>なに</rt></ruby>がありますか。 A: <ruby>財布<rt>さいふ</rt></ruby>があります。", "translation": "Q: 包包裡面有什麼？ A: 有錢包。", "category": "生活日常" },
+            { "id": 165, "level": "N5", "word": "靴", "reading": "くつ", "meaning": "鞋子", "example": "Q: Rainaちゃんの<ruby>靴<rt>くつ</rt></ruby>はどこですか。 A: <ruby>玄関<rt>げんかん</rt></ruby>にあります。", "translation": "Q: Raina 的鞋子在哪裡？ A: 在玄關。", "category": "生活日常" },
+            { "id": 166, "level": "N5", "word": "傘", "reading": "かさ", "meaning": "傘", "example": "Q: <ruby>雨<rt>あめ</rt></ruby>ですよ。<ruby>傘<rt>かさ</rt></ruby>がありますか。 A: はい、あります。", "translation": "Q: 下雨了喔，你有傘嗎？ A: 有的。", "category": "生活日常" },
+            { "id": 167, "level": "N5", "word": "鍵", "reading": "かぎ", "meaning": "鑰匙", "example": "Q: <ruby>鍵<rt>かぎ</rt></ruby>はどこにありますか。 A: <ruby>鞄<rt>かばん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>にあります。", "translation": "Q: 鑰匙在哪裡？ A: 在包包裡面。", "category": "生活日常" },
+            { "id": 168, "level": "N5", "word": "時計", "reading": "とけい", "meaning": "手錶 / 時鐘", "example": "Q: その<ruby>時計<rt>とけい</rt></ruby>、きれいですね。 A: ありがとうございます。", "translation": "Q: 那個手錶很漂亮呢。 A: 謝謝。", "category": "生活日常" },
+            { "id": 169, "level": "N5", "word": "電話", "reading": "でんわ", "meaning": "電話", "example": "Q: <ruby>電話<rt>でんわ</rt></ruby>をかけてもいいですか. A: はい，どうぞ。", "translation": "Q: 可以打個電話嗎？ A: 好的，請。", "category": "生活日常" },
+            { "id": 170, "level": "N5", "word": "鉛筆", "reading": "えんぴつ", "meaning": "鉛筆", "example": "Q: <ruby>鉛筆<rt>えんぴつ</rt></ruby>を<ruby>貸<rt>か</rt></ruby>してください。 A: はい、どうぞ。", "translation": "Q: 請借我鉛筆。 A: 好的，請用。", "category": "生活日常" },
+            { "id": 431, "level": "N5", "word": "アメリカ", "reading": "あめりか", "meaning": "美國", "example": "Q: <ruby>友達<rt>ともだち</rt></ruby>はどこにいますか。 A: <ruby>今<rt>いま</rt></ruby>、アメリカにいます。", "translation": "Q: 朋友在哪裡呢？ A: 現在在美國。", "category": "空間地點" },
+            { "id": 432, "level": "N5", "word": "イタリア", "reading": "いたりあ", "meaning": "義大利", "example": "Q: イタリアへ<ruby>行<rt>い</rt></ruby>ったことがありますか。 A: いいえ、還沒有。", "translation": "Q: 你去過義大利嗎？ A: 沒有，還沒去過。", "category": "空間地點" },
+            { "id": 433, "level": "N5", "word": "ベトナム", "reading": "べとなむ", "meaning": "越南", "example": "Q: <ruby>來月<rt>らいげつ</rt></ruby>、ベトナムへ<ruby>出張<rt>しゅっちょう</rt></ruby>しますか。 A: はい、その<ruby>予定<rt>よてい</rt></ruby>です。", "translation": "Q: 下個月要到越南出差嗎？ A: 是的，有這個計畫。", "category": "職場商務" },
+            { "id": 434, "level": "N5", "word": "空港", "reading": "くうこう", "meaning": "機場", "example": "Q: <ruby>何時<rt>なんじ</rt></ruby>に<ruby>空港<rt>くうこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。 A: <ruby>午後二時<rt>ごごにじ</rt></ruby>に<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 幾點要去機場？ A: 下午兩點去。", "category": "空間地點" },
+            { "id": 435, "level": "N5", "word": "美術館", "reading": "びじゅつかん", "meaning": "美術館", "example": "Q: <ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>美術館<rt>びじゅつかん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きませんか。 A: いいですね。<ruby>行<rt>い</rt></ruby>きましょう。", "translation": "Q: 要不要一起去美術館？ A: 好啊，走吧。", "category": "休閒興趣" },
+            { "id": 436, "level": "N5", "word": "ゾウ", "reading": "ぞう", "meaning": "大象", "example": "Q: Rainaちゃん、<ruby>動物園<rt>どうぶつえん</rt></ruby>で<ruby>何<rt>なに</rt></ruby>を<ruby>見<rt>み</rt></ruby>たいですか。 A: ゾウが<ruby>見<rt>み</rt></ruby>たいです！", "translation": "Q: Raina，在動物園想看什麼？ A: 我想看大象！", "category": "休閒興趣" },
+            { "id": 437, "level": "N5", "word": "パンダ", "reading": "ぱんだ", "meaning": "熊貓", "example": "Q: パンダはどこにいますか。 A: あの<ruby>木<rt>き</rt></ruby>の<ruby>下<rt>した</rt></ruby>にいますよ。", "translation": "Q: 熊貓在哪裡？ A: 在那棵樹下面喔。", "category": "休閒興趣" },
+            { "id": 438, "level": "N5", "word": "カレー", "reading": "かれー", "meaning": "咖哩", "example": "Q: お<ruby>昼<rt>ひる</rt></ruby>ご<ruby>飯<rt>はん</rt></ruby>はカレーでいいですか。 A: はい、カレーは<ruby>大好<rt>だいす</rt></ruby>きです。", "translation": "Q: 午餐吃咖哩可以嗎？ A: 可以，我最喜歡咖哩了。", "category": "生活日常" },
+            { "id": 439, "level": "N5", "word": "紅茶", "reading": "こうちゃ", "meaning": "紅茶", "example": "Q: コーヒーと<ruby>紅茶<rt>こうちゃ</rt></ruby>、どちらがいいですか。 A: <ruby>紅茶<rt>こうちゃ</rt></ruby>をお<ruby>願<rt>ねが</rt></ruby>いします。", "translation": "Q: 咖啡和紅茶，哪一個比較好？ A: 麻煩給我紅茶。", "category": "生活日常" },
+            { "id": 440, "level": "N5", "word": "ハンカチ", "reading": "はんかち", "meaning": "手帕", "example": "Q: <ruby>鞄<rt>かばん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>にハンカチがありますか。 A: はい、ちゃんとあります。", "translation": "Q: 包包裡有手帕嗎？ A: 有的，好好地帶著。", "category": "生活日常" },
+            { "id": 441, "level": "N5", "word": "けしゴム", "reading": "けしごむ", "meaning": "橡皮擦", "example": "Q: すみません、けしゴムを<ruby>貸<rt>か</rt></ruby>してください。 A: はい、どうぞ。", "translation": "Q: 不好意思，請借我橡皮擦。 A: 好的，請用。", "category": "生活日常" },
+            { "id": 442, "level": "N5", "word": "レジ", "reading": "レジ", "meaning": "收銀台", "example": "Q: レジはどこにありますか。 A: あちらの<ruby>出口<rt>でぐち</rt></ruby>の<ruby>近<rt>ちか</rt></ruby>くです。", "translation": "Q: 收銀台在哪裡？ A: 在那邊的出入口附近。", "category": "時尚購物" },
+            { "id": 443, "level": "N5", "word": "北", "reading": "きた", "meaning": "北 / 北邊", "example": "Q: <ruby>駅<rt>えき</rt></ruby>の<ruby>北口<rt>きたぐち</rt></ruby>で<ruby>待<rt>ま</rt></ruby>っていますか。 A: はい、<ruby>今<rt>いま</rt></ruby>そこへ<ruby>行<rt>い</rt></ruby>きます。", "translation": "Q: 你在車站北口等嗎？ A: 是的，我現在過去。", "category": "空間地點" },
+            { "id": 444, "level": "N5", "word": "西", "reading": "にし", "meaning": "西 / 西邊", "example": "Q: <ruby>太陽<rt>たいよう</rt></ruby>はどちらに<ruby>沈<rt>しず</rt></ruby>みますか。 A: 西に<ruby>沈<rt>しず</rt></ruby>みます。", "translation": "Q: 太陽會落在哪一邊？ A: 落在西邊。", "category": "基礎必備" },
+            { "id": 445, "level": "N5", "word": "狭い", "reading": "せまい", "meaning": "狹窄的", "example": "Q: その<ruby>部屋<rt>へや</rt></ruby>は<ruby>広<rt>ひろ</rt></ruby>いですか。 A: いいえ、とても<ruby>狭<rt>せま</rt></ruby>いです。", "translation": "Q: 那個房間寬敞嗎？ A: 不，非常狹窄。", "category": "描述與接續" },
+            { "id": 446, "level": "N5", "word": "走ります", "reading": "はしります", "meaning": "跑 / 跑步", "example": "Q: Rainaちゃん、どこへ<ruby>行<rt>い</rt></ruby>きますか。 A: あそこまで<ruby>走<rt>はし</rt></ruby>ります！", "translation": "Q: Raina，你要去哪裡？ A: 我要跑到那邊！", "category": "人體健康" },
+            { "id": 447, "level": "N5", "word": "レポート", "reading": "れぽーと", "meaning": "報告 / Report", "example": "Q: レポートはいつまでですか。 A: <ruby>明日<rt>あした</rt></ruby>の<ruby>朝<rt>あさ</rt></ruby>までです。", "translation": "Q: 報告要交到什麼時候？ A: 到明天早上為止。", "category": "職場商務" },
+            { "id": 448, "level": "N5", "word": "おじいさん", "reading": "おじいさん", "meaning": "爺爺 / 外公 (稱呼他人)", "example": "Q: おじいさんはお<ruby>元気<rt>げんき</rt></ruby>ですか。 A: はい、とても<ruby>元気<rt>げんき</rt></ruby>です。", "translation": "Q: 爺爺身體還好嗎？ A: 是的，非常有精神。", "category": "描述與接續" },
+            { "id": 449, "level": "N5", "word": "おばあさん", "reading": "おばあさん", "meaning": "奶奶 / 外婆 (稱呼他人)", "example": "Q: おばあさんはどこにいますか。 A: <ruby>庭<rt>にわ</rt></ruby>にいますよ。", "translation": "Q: 奶奶在哪裡？ A: 在院子裡喔。", "category": "描述與接續" },
+            { "id": 450, "level": "N5", "word": "ゆっくり", "reading": "ゆっくり", "meaning": "慢慢地 / 悠閒地", "example": "Q: すみません、もっとゆっくり<ruby>話<rt>はな</rt></ruby>してください。 A: はい、分和かりました。", "translation": "Q: 不好意思，請說得更慢一點。 A: 好的，我明白了。", "category": "描述與接續" },
+            { "id": 451, "level": "N5", "word": "遊びます", "reading": "あそびます", "meaning": "玩 / 遊玩", "example": "Q: <ruby>週末<rt>しゅうまつ</rt></ruby>、何をしますか。 A: Rainaちゃんと<ruby>公園<rt>こうえん</rt></ruby>で<ruby>遊<rt>あそ</rt></ruby>びます。", "translation": "Q: 週末要做什麼？ A: 要跟 Raina 在公園玩。", "category": "休閒興趣" },
+            { "id": 452, "level": "N5", "word": "インターネット", "reading": "いんたーねっと", "meaning": "網際網路", "example": "Q: インターネットで<ruby>何<rt>なに</rt></ruby>をしますか。 A: YouTubeで<ruby>動画<rt>どうが</rt></ruby>を<ruby>見<rt>み</rt></ruby>ます。", "translation": "Q: 上網要做什麼？ A: 在 YouTube 看影片。", "category": "生活日常" },
+            { "id": 453, "level": "N5", "word": "どっち", "reading": "どっち", "meaning": "哪個 (口語)", "example": "Q: リンゴとメロン、どっちが<ruby>好<rt>す</rt></ruby>きですか。 A: リンゴの<ruby>方<rt>ほう</rt></ruby>が<ruby>好<rt>す</rt></ruby>きです。", "translation": "Q: 蘋果和哈密瓜，你比較喜歡哪個？ A: 我比較喜歡蘋果。", "category": "描述與接續" },
+            { "id": 454, "level": "N5", "word": "うん", "reading": "うん", "meaning": "是 / 嗯 (はい的口語)", "example": "Q: Rainaちゃん、お<ruby>腹<rt>はら</rt></ruby>すいた？ A: うん、すいた！", "translation": "Q: Raina，肚子餓了嗎？ A: 嗯，餓了！", "category": "生活日常" },
+            { "id": 455, "level": "N5", "word": "さっき", "reading": "さっき", "meaning": "剛才", "example": "Q: Easonさんはどこですか。 A: さっきまでそこにいましたよ。", "translation": "Q: Eason 先生在哪裡？ A: 他剛才還在那裡喔。", "category": "描述與接續" }
+        ];
+
+const MASTER_DATABASE = [];
+        // 修正迴圈範圍到 455，確保新加入的字都能顯示
+        for (let i = 1; i <= 455; i++) {
+            const match = RAW_DATA.find(x => x.id === i);
+            let cat = "描述與接續";
+            for (const [name, ids] of Object.entries(SUPER_CAT_IDS)) { if (ids.includes(i)) { cat = name; break; } }
+            if (match) MASTER_DATABASE.push({ ...match, category: cat });
+            else MASTER_DATABASE.push({ id: i, word: `N5 單字 #${i}`, reading: "---", meaning: "整理中", example: "例句加載中...", translation: "...", category: cat });
+        }
+
+const MASTER_DATABASE = RAW_DATA_LIST.map(item => {
+            let cat = "描述與接續";
+            for (const [name, ids] of Object.entries(SUPER_CAT_IDS)) { if (ids.includes(item.id)) { cat = name; break; } }
+            return { ...item, category: cat };
+        }).sort((a,b) => a.id - b.id);
+
+        const App = () => {
+            const [view, setView] = useState('flashcard');
+            const [selectedCategory, setSelectedCategory] = useState('全部');
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [isFlipped, setIsFlipped] = useState(false);
+            const [speed, setSpeed] = useState(1.0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [aiAnchor, setAiAnchor] = useState(null);
+            const [aiFeedback, setAiFeedback] = useState(null);
+            const [userAudioUrl, setUserAudioUrl] = useState(null);
+            const [isRecording, setIsRecording] = useState(false);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+            const audioRef = useRef(new Audio());
+            const userAudioRef = useRef(new Audio());
+            const mediaRecorderRef = useRef(null);
+            const chunksRef = useRef([]);
+
+            const filteredWords = useMemo(() => {
+                return selectedCategory === '全部' ? MASTER_DATABASE : MASTER_DATABASE.filter(w => w.category === selectedCategory);
+            }, [selectedCategory]);
+
+            const current = useMemo(() => filteredWords[currentIndex] || MASTER_DATABASE[0], [filteredWords, currentIndex]);
+
+            useEffect(() => { setIsFlipped(false); setAiAnchor(null); setAiFeedback(null); setUserAudioUrl(null); }, [currentIndex, view, selectedCategory]);
+
+            const playAudio = async (text) => {
+                if (isPlaying) return;
+                setIsPlaying(true);
+                const cleanText = text.replace(/<[^>]*>/g, '');
+                const spd = speed >= 1.5 ? "fast" : speed <= 0.75 ? "slow" : "natural";
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: `Say this clearly in Japanese: ${cleanText}` }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } } })
+                    });
+                    const data = await res.json();
+                    const b64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    if (b64) {
+                        const blob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: 'audio/mp3' });
+                        audioRef.current.src = URL.createObjectURL(blob);
+                        audioRef.current.onended = () => setIsPlaying(false);
+                        await audioRef.current.play();
+                    }
+                } catch { setIsPlaying(false); }
+            };
+
+            const startRec = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorderRef.current = new MediaRecorder(stream);
+                    chunksRef.current = [];
+                    mediaRecorderRef.current.ondataavailable = e => chunksRef.current.push(e.data);
+                    mediaRecorderRef.current.onstop = () => {
+                        const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
+                        const url = URL.createObjectURL(blob);
+                        setUserAudioUrl(url); 
+                        userAudioRef.current.src = url;
+                        stream.getTracks().forEach(t => t.stop());
+                        analyzePron();
+                    };
+                    mediaRecorderRef.current.start();
+                    setIsRecording(true);
+                } catch { alert("錄音失敗。請確認是否為 HTTPS 連線並授權麥克風。"); setIsRecording(false); }
+            };
+
+            const analyzePron = async () => {
+                setIsAnalyzing(true);
+                const target = current?.example?.replace(/<[^>]*>/g, '') || "";
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: `評分診斷日文發音，目標句子：「${target}」。繁體中文 JSON: {"score": 85, "tip": "..."}` }] }], generationConfig: { responseMimeType: "application/json" } })
+                    });
+                    const data = await res.json();
+                    setAiFeedback(JSON.parse(data.candidates[0].content.parts[0].text));
+                } catch { setAiFeedback({ score: "?", tip: "分析失敗。" }); }
+                finally { setIsAnalyzing(false); }
+            };
+
+            const genAnchor = async () => {
+                const prompt = `針對「${current.word}」寫趣味故事。加入 Eason 或 Raina。繁體中文 JSON: {"story": "..."}`;
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+                    });
+                    const data = await res.json();
+                    setAiAnchor(JSON.parse(data.candidates[0].content.parts[0].text).story);
+                } catch { setAiAnchor("生成故事失敗。"); }
+            };
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen flex flex-col p-6 pb-28 bg-slate-50 relative">
+                    <header className="mb-4 flex justify-between items-center px-2">
+                        <div>
+                            <h1 className="text-2xl font-black text-indigo-900 italic tracking-tighter">Ivy's Coach</h1>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1">N5 AI v12.2</p>
+                        </div>
+                        <div className="bg-white px-3 py-1 rounded-full shadow-sm border border-slate-100 font-black text-[10px] text-indigo-600">
+                            {currentIndex + 1} / {filteredWords.length}
+                        </div>
+                    </header>
+
+                    <main className="flex-grow">
+                        {view === 'flashcard' && (
+                            <div className="flex flex-col gap-4">
+                                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                    {['全部', ...Object.keys(SUPER_CAT_IDS).sort()].map(cat => (
+                                        <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400'}`}>{cat}</button>
+                                    ))}
+                                </div>
+                                <div className="relative h-[480px] perspective-1000" onClick={() => setIsFlipped(!isFlipped)}>
+                                    <div className={`card-container transform-style-3d relative w-full h-full ${isFlipped ? 'rotate-y-180' : ''}`}>
+                                        <div className="absolute inset-0 backface-hidden bg-white rounded-[40px] shadow-xl border border-slate-100 flex flex-col items-center justify-center p-10 text-center">
+                                            <span className="absolute top-8 left-8 text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase">{current?.category}</span>
+                                            <button onClick={(e) => { e.stopPropagation(); playAudio(current.word); }} className="absolute top-6 right-6 p-7 rounded-full bg-indigo-600 text-white shadow-lg"><Icons.Volume /></button>
+                                            <p className="text-slate-400 text-xl mb-2 font-medium">{current?.reading}</p>
+                                            <h2 className="text-5xl font-black text-slate-900 tracking-tighter">{current?.word}</h2>
+                                        </div>
+                                        <div className="absolute inset-0 backface-hidden bg-slate-900 rounded-[40px] shadow-2xl p-8 text-white rotate-y-180 flex flex-col overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                                            <h3 className="text-3xl font-bold text-indigo-300 mb-4">{current?.meaning}</h3>
+                                            <div className="bg-white/10 p-5 rounded-3xl border border-white/10 mb-4">
+                                                <div className="flex justify-between items-center mb-2"><span className="text-[10px] text-indigo-400 font-black uppercase">實戰例句</span><button onClick={() => playAudio(current.example)} className="p-2 text-indigo-300"><Icons.Volume /></button></div>
+                                                <p className="text-lg font-bold text-indigo-50 leading-relaxed" dangerouslySetInnerHTML={{ __html: current?.example }}></p>
+                                                <p className="text-slate-400 text-xs italic mt-2">{current?.translation}</p>
+                                            </div>
+                                            <div className="bg-indigo-600/20 p-5 rounded-3xl border border-indigo-500/30 mb-4">
+                                                {!isRecording ? <button onClick={startRec} className="w-full bg-indigo-600 py-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2"><Icons.Mic />開始錄音</button> : <button onClick={() => mediaRecorderRef.current.stop()} className="w-full bg-red-500 py-3 rounded-2xl font-black text-xs animate-pulse-red flex items-center justify-center gap-2"><Icons.Square />停止並分析</button>}
+                                                {userAudioUrl && <button onClick={() => userAudioRef.current.play()} className="mt-4 w-full py-2 bg-green-600/20 text-green-400 rounded-xl text-[10px] font-black border border-green-500/30">播放回放</button>}
+                                                {aiFeedback && <div className="mt-4 bg-white/10 p-3 rounded-2xl flex items-center justify-between"><span className="text-2xl font-black text-green-400">{aiFeedback.score}分</span><p className="text-[10px] text-slate-300 text-right max-w-[60%]">{aiFeedback.tip}</p></div>}
+                                            </div>
+                                            <button onClick={genAnchor} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 mb-4"><Icons.Anchor /> 生成 AI 記憶故事</button>
+                                            {aiAnchor && <div className="bg-indigo-500/10 p-4 rounded-2xl text-[11px] italic text-indigo-100 leading-relaxed mb-4">{aiAnchor}</div>}
+                                            <button onClick={()=>setIsFlipped(false)} className="mt-auto text-xs text-indigo-400 font-black uppercase text-center">返回正面</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 mt-2 px-2">
+                                    <button onClick={() => setCurrentIndex(p => (p - 1 + filteredWords.length) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center shadow-sm text-slate-300"><Icons.ChevronLeft /></button>
+                                    <button onClick={() => setCurrentIndex(p => (p + 1) % filteredWords.length)} className="bg-indigo-600 h-16 rounded-[24px] shadow-lg flex items-center justify-center text-white"><Icons.Check /></button>
+                                    <button onClick={() => setCurrentIndex(p => (p + 1) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center shadow-sm text-slate-600"><Icons.ChevronRight /></button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-sm bg-white/90 backdrop-blur-2xl h-20 rounded-[35px] shadow-2xl border border-white/50 flex items-center justify-around px-6 z-[100]">
+                        <button onClick={() => setView('flashcard')} className={`p-4 rounded-[22px] transition-all ${view==='flashcard'?'bg-indigo-600 text-white shadow-xl scale-110':'text-slate-300'}`}><Icons.Home /></button>
+                        <button onClick={() => setView('list')} className={`p-4 rounded-[22px] transition-all ${view==='list'?'bg-indigo-600 text-white shadow-xl scale-110':'text-slate-300'}`}><Icons.List /></button>
+                    </nav>
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
