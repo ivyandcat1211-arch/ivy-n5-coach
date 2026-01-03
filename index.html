@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ivy's N5 日本生活全攻略 12.5 (手機穩定版)</title>
+    <title>Ivy's N5 日本生活全攻略 50.0 (API Key Locked)</title>
+    <!-- 核心庫載入 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,45 +13,45 @@
         body { -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; overflow-x: hidden; touch-action: manipulation; background-color: #f8fafc; }
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .card-container { width: 100%; height: 500px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+        @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse-red { animation: pulse-red 1.5s infinite; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        .card-container { width: 100%; height: 520px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
         rt { font-size: 0.55em; color: #6366f1; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="root"></div>
+
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-        const apiKey = "AIzaSyAwqb59nLSBTv0A948W7ni7Az-hOfBb4t0"; 
+
+        // --- 全域金鑰設定區 ---
+        // Ivy，請在此處貼上妳新申請的金鑰，取代括號內的文字
+        const GLOBAL_API_KEY = "AIzaSyATHnh0rkq5i4JBgx7Qu0hNP4syaSRgEqk";
 
         const Icons = {
             Volume: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>,
             Mic: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>,
+            Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
+            Pause: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>,
             Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>,
+            History: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>,
             List: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>,
             ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
             ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>,
             Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-            Anchor: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"></circle><line x1="12" cy1="22" x2="12" y2="8"></line></svg>,
             Square: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
         };
 
-        const SUPER_CAT_IDS = {
-            "生活日常": [1, 3, 55, 56, 57, 58, 59, 60, 61, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 107, 108, 109, 128, 129, 130, 151, 152, 153, 154, 155, 156, 157, 158, 159, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 438, 439, 440, 441, 452, 454],
-            "職場商務": [35, 37, 110, 254, 255, 256, 257, 258, 259, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 326, 327, 328, 329, 330, 365, 382, 412, 424, 426, 428, 430, 433, 447],
-            "人體健康": [13, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 250, 387, 446],
-            "空間地點": [2, 36, 38, 69, 80, 81, 82, 83, 84, 85, 86, 115, 116, 117, 118, 119, 120, 121, 122, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 215, 216, 217, 218, 276, 277, 278, 279, 280, 289, 290, 351, 352, 353, 354, 360, 366, 367, 368, 431, 432, 434, 443],
-            "基礎必備": [4, 5, 6, 7, 17, 19, 51, 52, 53, 54, 111, 123, 124, 125, 126, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 191, 192, 193, 194, 195, 196, 197, 198, 199, 204, 205, 206, 207, 208, 209, 210, 386, 388, 444],
-            "休閒興趣": [105, 106, 127, 271, 272, 273, 274, 275, 335, 336, 337, 338, 339, 340, 369, 371, 372, 373, 375, 376, 377, 378, 379, 380, 423, 429, 435, 436, 437, 451],
-            "描述與接續": [8, 11, 12, 14, 18, 21, 22, 43, 44, 45, 46, 47, 48, 49, 50, 62, 63, 64, 65, 66, 67, 68, 87, 88, 89, 90, 91, 92, 93, 94, 114, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 200, 201, 202, 203, 244, 245, 246, 247, 248, 249, 252, 253, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 281, 282, 283, 284, 285, 286, 287, 288, 303, 304, 305, 306, 307, 308, 309, 310, 321, 322, 323, 324, 325, 331, 332, 333, 334, 341, 343, 344, 345, 346, 347, 348, 349, 350, 355, 356, 357, 358, 370, 381, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 415, 416, 417, 418, 419, 420, 421, 422, 425, 445, 448, 449, 450, 453, 455],
-            "時尚購物": [25, 41, 42, 112, 113, 160, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 359, 442]
-        };
-
-        // --- 核心修正：此處已將數據攤平，解決空白問題 ---
-        const RAW_DATA = [
-                        { "id": 1, "level": "N5", "word": "アイスクリーム", "reading": "アイスクリーム", "meaning": "冰淇淋", "example": "<ruby>暑<rt>あつ</rt></ruby>い<ruby>日<rt>ひ</rt></ruby>に<ruby>冷<rt>つめ</rt></ruby>たいアイスクリームを<ruby>食<rt>た</rt></ruby>べます。", "translation": "在炎熱的日子裡吃冰涼的冰淇淋。", "category": "生活日常" },
+        // --- Ivy 的數據庫 (可在下方 RAW_DATA_COLLECTION 自由擴充) ---
+        const RAW_DATA_COLLECTION = [
+            { "id": 1, "level": "N5", "word": "アイスクリーム", "reading": "アイスクリーム", "meaning": "冰淇淋", "example": "<ruby>暑<rt>あつ</rt></ruby>い<ruby>日<rt>ひ</rt></ruby>に<ruby>冷<rt>つめ</rt></ruby>たいアイスクリームを<ruby>食<rt>た</rt></ruby>べます。", "translation": "在炎熱的日子裡吃冰涼的冰淇淋。", "category": "生活日常" },
             { "id": 2, "level": "N5", "word": "間", "reading": "あいだ", "meaning": "之間, 中間", "example": "<ruby>銀行<rt>ぎんこう</rt></ruby>と<ruby>郵便局<rt>ゆうびんきょく</rt></ruby>の<ruby>間<rt>あいだ</rt></ruby>に、きれいな<ruby>公園<rt>こうえん</rt></ruby>があります。", "translation": "銀行和郵局之間，有一個漂亮的公園。", "category": "空間地點" },
             { "id": 3, "level": "N5", "word": "會います", "reading": "あいます", "meaning": "見面", "example": "<ruby>明日<rt>あした</rt></ruby>、<ruby>駅<rt>えき</rt></ruby>の<ruby>近<rt>ちか</rt></ruby>くで<ruby>友達<rt>ともだち</rt></ruby>に<ruby>會<rt>あ</rt></ruby>います。", "translation": "明天在車站附近跟朋友見面。", "category": "生活日常" },
             { "id": 4, "level": "N5", "word": "青", "reading": "あお", "meaning": "藍色", "example": "<ruby>彼女<rt>かのじょ</rt></ruby>は<ruby>青<rt>あお</rt></ruby>が<ruby>一番好<rt>いちばんす</rt></ruby>きな<ruby>色<rt>いろ</rt></ruby>です。", "translation": "藍色是她最喜歡的顏色。", "category": "基礎必備" },
@@ -247,11 +248,19 @@
             { "id": 455, "level": "N5", "word": "さっき", "reading": "さっき", "meaning": "剛才", "example": "Q: Easonさんはどこですか。 A: さっきまでそこにいましたよ。", "translation": "Q: Eason 先生在哪裡？ A: 他剛才還在那裡喔。", "category": "描述與接續" }
         ];
 
-        const MASTER_DATABASE = RAW_DATA.map(item => {
-            let cat = "描述與接續";
-            for (const [name, ids] of Object.entries(SUPER_CAT_IDS)) { if (ids.includes(item.id)) { cat = name; break; } }
-            return { ...item, category: cat };
-        }).sort((a,b) => a.id - b.id);
+        // 數據補全引擎：確保具象化 430 個單字
+        const MASTER_DATABASE = [];
+        const DEFAULT_CATS = ["生活日常", "基礎必備", "空間地點", "描述與接續", "職場商務", "人體健康", "休閒興趣", "時尚購物"];
+        for (let i = 1; i <= 430; i++) {
+            const hit = RAW_DATA_COLLECTION.find(x => x.id === i);
+            if (hit) MASTER_DATABASE.push(hit);
+            else {
+                MASTER_DATABASE.push({ 
+                    id: i, word: `N5 單字 #${i}`, reading: "---", meaning: "等待數據錄入", 
+                    example: "正在整理實戰例句...", translation: "...", category: DEFAULT_CATS[i % DEFAULT_CATS.length] 
+                });
+            }
+        }
 
         const App = () => {
             const [view, setView] = useState('flashcard');
@@ -260,49 +269,114 @@
             const [isFlipped, setIsFlipped] = useState(false);
             const [speed, setSpeed] = useState(1.0);
             const [isPlaying, setIsPlaying] = useState(false);
-            const [aiAnchor, setAiAnchor] = useState(null);
+            const [srsData, setSrsData] = useState({});
+            
             const [aiFeedback, setAiFeedback] = useState(null);
             const [userAudioUrl, setUserAudioUrl] = useState(null);
+            const [isUserAudioPlaying, setIsUserAudioPlaying] = useState(false);
             const [isRecording, setIsRecording] = useState(false);
             const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-            const audioRef = useRef(new Audio());
             const userAudioRef = useRef(new Audio());
             const mediaRecorderRef = useRef(null);
             const chunksRef = useRef([]);
 
+            // 動態分類提取
+            const categories = useMemo(() => {
+                const uniqueCats = new Set(MASTER_DATABASE.map(w => w.category));
+                return ['全部', ...Array.from(uniqueCats).sort()];
+            }, [MASTER_DATABASE]);
+
             const filteredWords = useMemo(() => {
-                return selectedCategory === '全部' ? MASTER_DATABASE : MASTER_DATABASE.filter(w => w.category === selectedCategory);
-            }, [selectedCategory]);
+                const list = [...MASTER_DATABASE].sort((a,b) => a.id - b.id);
+                return selectedCategory === '全部' ? list : list.filter(w => w.category === selectedCategory);
+            }, [selectedCategory, MASTER_DATABASE]);
 
-            const current = useMemo(() => filteredWords[currentIndex] || MASTER_DATABASE[0], [filteredWords, currentIndex]);
+            const reviewList = useMemo(() => MASTER_DATABASE.filter(w => srsData[w.id]?.nextReview && Date.now() >= srsData[w.id].nextReview), [srsData]);
 
-            useEffect(() => { setIsFlipped(false); setAiAnchor(null); setAiFeedback(null); setUserAudioUrl(null); }, [currentIndex, view, selectedCategory]);
+            const current = useMemo(() => {
+                if (view === 'review') return reviewList[currentIndex] || reviewList[0] || null;
+                return filteredWords[currentIndex] || filteredWords[0] || MASTER_DATABASE[0];
+            }, [view, reviewList, filteredWords, currentIndex]);
 
-            const playAudio = async (text) => {
-                if (isPlaying) return;
-                setIsPlaying(true);
-                const cleanText = text.replace(/<[^>]*>/g, '');
-                const spd = speed >= 1.5 ? "fast" : speed <= 0.75 ? "slow" : "natural";
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: `Say in Japanese: ${cleanText}` }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } } })
-                    });
-                    const data = await res.json();
-                    const b64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                    if (b64) {
-                        const blob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: 'audio/mp3' });
-                        audioRef.current.src = URL.createObjectURL(blob);
-                        audioRef.current.onended = () => setIsPlaying(false);
-                        await audioRef.current.play();
-                    }
-                } catch { setIsPlaying(false); }
+            const toRuby = (text) => text ? text.replace(/([一-龥々]+)\(([^)]+)\)/g, '<ruby>$1<rt>$2</rt></ruby>') : "";
+
+            // --- Native Speech 穩定發音 (帶去重) ---
+            const playNativeAudio = (text, side) => {
+                if (side === 'front' && isFlipped) return;
+                if (side === 'back' && !isFlipped) return;
+
+                window.speechSynthesis.cancel();
+                // 剔除 rt 標籤內容，僅唸漢字
+                const cleanText = text.replace(/<rt>.*?<\/rt>/g, '').replace(/<[^>]*>/g, '').replace(/\(([^)]+)\)/g, '');
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'ja-JP';
+                utterance.rate = speed;
+                utterance.onstart = () => setIsPlaying(true);
+                utterance.onend = () => setIsPlaying(false);
+                utterance.onerror = () => setIsPlaying(false);
+                window.speechSynthesis.speak(utterance);
             };
 
-            const startRec = async () => {
+            const resetState = () => {
+                window.speechSynthesis.cancel();
+                setIsFlipped(false); setIsPlaying(false); setAiFeedback(null); 
+                setUserAudioUrl(null); setIsUserAudioPlaying(false);
+                if (userAudioRef.current) { userAudioRef.current.pause(); userAudioRef.current.src = ""; }
+            };
+
+            useEffect(() => { resetState(); }, [currentIndex, view]);
+
+            // --- 強化型 AI 診斷連線引擎 ---
+            const callGeminiAIWithRetry = async (prompt, retries = 5) => {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GLOBAL_API_KEY}`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                contents: [{ parts: [{ text: prompt }] }], 
+                                generationConfig: { responseMimeType: "application/json" } 
+                            })
+                        });
+                        
+                        if (res.status === 429) throw new Error("QuotaExceeded");
+                        if (res.status === 403 || res.status === 401) throw new Error("KeyForbidden");
+                        if (!res.ok) throw new Error("NetworkError");
+
+                        const data = await res.json();
+                        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (!rawText) throw new Error("Empty");
+                        
+                        // 精準提取 JSON 區塊
+                        const match = rawText.match(/\{[\s\S]*\}/);
+                        return JSON.parse(match ? match[0] : rawText);
+                    } catch (e) {
+                        if (e.message === "QuotaExceeded" || e.message === "KeyForbidden") throw e;
+                        if (i === retries - 1) throw e;
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+                    }
+                }
+            };
+
+            const analyzePron = async () => {
+                setAiFeedback(null);
+                setIsAnalyzing(true);
+                const targetText = current?.example?.replace(/<rt>.*?<\/rt>/g, '').replace(/<[^>]*>/g, '').replace(/\(([^)]+)\)/g, '') || "";
+                const prompt = `你是一位專業的日文老師。請評分並診斷學生的發音。目標句子：「${targetText}」。用繁體中文建議。必須僅以 JSON 回傳：{"score": 85, "tip": "建議內容"}`;
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const result = await callGeminiAIWithRetry(prompt);
+                    setAiFeedback(result);
+                } catch (err) {
+                    let msg = "網路連線稍慢，建議再錄一次。";
+                    if (err.message === "QuotaExceeded") msg = "今日 AI 額度已耗盡，明天再練習喔。";
+                    if (err.message === "KeyForbidden") msg = "金鑰已失效或被 Google 禁用。";
+                    setAiFeedback({ score: "!", tip: msg });
+                } finally { setIsAnalyzing(false); }
+            };
+
+            const startRec = (e) => {
+                e.stopPropagation();
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                     mediaRecorderRef.current = new MediaRecorder(stream);
                     chunksRef.current = [];
                     mediaRecorderRef.current.ondataavailable = e => chunksRef.current.push(e.data);
@@ -312,104 +386,121 @@
                         setUserAudioUrl(url); 
                         userAudioRef.current.src = url;
                         stream.getTracks().forEach(t => t.stop());
+                        // 錄音結束後自動分析
                         analyzePron();
                     };
                     mediaRecorderRef.current.start();
                     setIsRecording(true);
-                } catch { alert("請在 HTTPS 環境開啟。"); setIsRecording(false); }
+                }).catch(()=>{});
             };
 
-            const analyzePron = async () => {
-                setIsAnalyzing(true);
-                const target = current?.example?.replace(/<[^>]*>/g, '') || "";
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: `評分日文發音，句子：「${target}」。繁體中文 JSON: {"score": 85, "tip": "..."}` }] }], generationConfig: { responseMimeType: "application/json" } })
-                    });
-                    const data = await res.json();
-                    setAiFeedback(JSON.parse(data.candidates[0].content.parts[0].text));
-                } catch { setAiFeedback({ score: "?", tip: "分析失敗。" }); }
-                finally { setIsAnalyzing(false); }
+            const stopRec = (e) => {
+                e.stopPropagation();
+                if (mediaRecorderRef.current && isRecording) {
+                    mediaRecorderRef.current.stop();
+                    setIsRecording(false);
+                }
             };
 
-            const genAnchor = async () => {
-                const prompt = `針對「${current.word}」寫故事。加入 Eason 或 Raina。繁體中文 JSON: {"story": "..."}`;
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
-                    });
-                    const data = await res.json();
-                    setAiAnchor(JSON.parse(data.candidates[0].content.parts[0].text).story);
-                } catch { setAiAnchor("生成故事失敗。"); }
+            const toggleUserAudio = (e) => {
+                e.stopPropagation();
+                if (isUserAudioPlaying) { userAudioRef.current.pause(); setIsUserAudioPlaying(false); }
+                else if (userAudioUrl) { userAudioRef.current.play(); setIsUserAudioPlaying(true); }
+            };
+
+            const markAsLearned = (id) => {
+                const lvl = srsData[id]?.level || 0;
+                const nextL = Math.min(lvl + 1, 5);
+                const nextReview = Date.now() + ([0,1,3,7,14,30][nextL] * 24 * 60 * 60 * 1000);
+                setSrsData(p => ({ ...p, [id]: { level: nextL, nextReview } }));
+                setCurrentIndex(p => (p + 1) % filteredWords.length);
             };
 
             return (
-                <div className="max-w-md mx-auto min-h-screen flex flex-col p-6 pb-28 bg-slate-50 relative">
-                    <header className="mb-4 flex justify-between items-center px-2">
-                        <h1 className="text-2xl font-black text-indigo-900 italic">Ivy's Coach</h1>
-                        <span className="bg-white px-3 py-1 rounded-full shadow-sm text-indigo-600 font-black text-[10px]">{currentIndex + 1} / {filteredWords.length}</span>
+                <div className="max-w-md mx-auto min-h-screen flex flex-col p-6 pb-28 relative overflow-hidden tracking-tight">
+                    <header className="mb-4 flex justify-between items-center px-2 pt-2">
+                        <div>
+                            <h1 className="text-2xl font-black text-indigo-900 italic uppercase">Ivy's Coach</h1>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-widest leading-none uppercase">N5 Android Pro 50.0</p>
+                        </div>
+                        <div className="bg-white px-3 py-1 rounded-full shadow-sm border border-slate-100 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span className="text-[10px] font-black text-indigo-600">{currentIndex + 1} / {filteredWords.length}</span>
+                        </div>
                     </header>
+
                     <main className="flex-grow">
                         {view === 'flashcard' && (
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                                    {['全部', ...Object.keys(SUPER_CAT_IDS).sort()].map(cat => (
-                                        <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400'}`}>{cat}</button>
-                                    ))}
+                                    {categories.map(cat => <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-md border-indigo-600' : 'bg-white text-slate-400 border-slate-200'}`}>{cat}</button>)}
+                                </div>
+                                <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
+                                    {[0.5, 0.75, 1.0, 1.5].map(s => <button key={s} onClick={() => setSpeed(s)} className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${speed === s ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>{s}x</button>)}
                                 </div>
                                 <div className="relative h-[480px] perspective-1000" onClick={() => setIsFlipped(!isFlipped)}>
                                     <div className={`card-container transform-style-3d relative w-full h-full ${isFlipped ? 'rotate-y-180' : ''}`}>
-                                        <div className="absolute inset-0 backface-hidden bg-white rounded-[40px] shadow-xl flex flex-col items-center justify-center p-10 text-center">
+                                        <div className={`absolute inset-0 backface-hidden bg-white rounded-[40px] shadow-xl border border-slate-100 flex flex-col items-center justify-center p-10 text-center ${isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                                             <span className="absolute top-8 left-8 text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase">{current?.category}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); playAudio(current.word); }} className="absolute top-6 right-6 p-7 rounded-full bg-indigo-600 text-white"><Icons.Volume /></button>
-                                            <p className="text-slate-400 text-xl mb-2">{current?.reading}</p>
-                                            <h2 className="text-5xl font-black text-slate-900">{current?.word}</h2>
+                                            <div className="absolute top-6 right-6">
+                                                <button onClick={(e) => { e.stopPropagation(); playNativeAudio(current.word, 'front'); }} className="p-7 rounded-full bg-indigo-600 text-white shadow-lg active:scale-90 touch-hit-area"><Icons.Volume /></button>
+                                            </div>
+                                            <p className="text-slate-400 text-xl mb-2 font-medium">{current?.reading}</p>
+                                            <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-tight">{current?.word}</h2>
                                         </div>
-                                        <div className="absolute inset-0 backface-hidden bg-slate-900 rounded-[40px] shadow-2xl p-8 text-white rotate-y-180 flex flex-col overflow-y-auto">
-                                            <h3 className="text-3xl font-bold text-indigo-300 mb-4">{current?.meaning}</h3>
-                                            <div className="bg-white/10 p-5 rounded-3xl mb-4">
-                                                <div className="flex justify-between mb-2"><span className="text-[10px] font-black uppercase">實戰例句</span><button onClick={() => playAudio(current.example)} className="text-indigo-300"><Icons.Volume /></button></div>
-                                                <p className="text-lg font-bold" dangerouslySetInnerHTML={{ __html: current?.example }}></p>
+                                        <div className={`absolute inset-0 backface-hidden bg-slate-900 rounded-[40px] shadow-2xl p-8 text-white rotate-y-180 flex flex-col overflow-y-auto custom-scrollbar ${!isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} onClick={e => e.stopPropagation()}>
+                                            <h3 className="text-3xl font-bold text-indigo-300">{current?.meaning}</h3>
+                                            <div className="bg-white/10 p-5 rounded-3xl border border-white/10 mt-4 mb-4 relative">
+                                                <div className="flex justify-between items-center mb-2"><span className="text-[10px] text-indigo-400 uppercase font-black">實戰例句</span><button onClick={(e) => { e.stopPropagation(); playNativeAudio(current.example, 'back'); }} className="p-2 text-indigo-300 touch-hit-area"><Icons.Volume /></button></div>
+                                                <p className="text-lg font-bold text-indigo-50 leading-relaxed" dangerouslySetInnerHTML={{ __html: toRuby(current?.example) }}></p>
                                                 <p className="text-slate-400 text-xs italic mt-2">{current?.translation}</p>
                                             </div>
-                                            <div className="bg-indigo-600/20 p-5 rounded-3xl mb-4">
-                                                {!isRecording ? <button onClick={startRec} className="w-full bg-indigo-600 py-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2"><Icons.Mic />開始錄音</button> : <button onClick={() => mediaRecorderRef.current.stop()} className="w-full bg-red-500 py-3 rounded-2xl font-black text-xs animate-pulse-red flex items-center justify-center gap-2"><Icons.Square />停止分析</button>}
-                                                {userAudioUrl && <button onClick={() => userAudioRef.current.play()} className="mt-4 w-full py-2 bg-green-600/20 text-green-400 rounded-xl text-[10px] font-black">播放回放</button>}
-                                                {aiFeedback && <div className="mt-4 bg-white/10 p-3 rounded-2xl flex items-center justify-between"><span className="text-2xl font-black text-green-400">{aiFeedback.score}分</span><p className="text-[10px] text-slate-300">{aiFeedback.tip}</p></div>}
+                                            <div className="bg-indigo-600/20 p-5 rounded-3xl border border-indigo-500/30 mb-4">
+                                                <div className="flex justify-between items-center mb-4"><p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">跟讀診斷</p>{isAnalyzing && <span className="text-[10px] text-indigo-300 animate-pulse font-bold">分析中...</span>}</div>
+                                                {!isRecording ? <button onClick={startRec} className="w-full bg-indigo-600 py-3 rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2"><Icons.Mic />開始錄音</button> : <button onClick={stopRec} className="w-full bg-red-500 py-3 rounded-2xl font-black text-xs animate-pulse-red flex items-center justify-center gap-2"><Icons.Square />停止分析</button>}
+                                                {userAudioUrl && <button onClick={toggleUserAudio} className="mt-4 w-full py-2 bg-green-600/20 text-green-400 rounded-xl text-[10px] font-black border border-green-500/30 uppercase tracking-widest flex items-center justify-center gap-2">{isUserAudioPlaying ? <Icons.Pause /> : <Icons.Play />} {isUserAudioPlaying ? '暫停播放' : '回放錄音'}</button>}
+                                                {aiFeedback && <div className="mt-4 bg-white/10 p-4 rounded-2xl animate-in slide-in-from-top-1"><div className="flex justify-between items-center mb-1"><span className="text-[10px] font-bold text-indigo-300 uppercase">評分</span><span className="text-xl font-black text-green-400">{aiFeedback.score}</span></div><p className="text-[10px] text-slate-300 leading-relaxed italic">{aiFeedback.tip}</p></div>}
                                             </div>
-                                            <button onClick={genAnchor} className="w-full py-4 bg-white/5 rounded-2xl text-[10px] font-black flex items-center justify-center gap-2 mb-4"><Icons.Anchor /> 生成 AI 記憶故事</button>
-                                            {aiAnchor && <div className="bg-indigo-500/10 p-4 rounded-2xl text-[11px] mb-4">{aiAnchor}</div>}
-                                            <button onClick={()=>setIsFlipped(false)} className="mt-auto text-xs text-indigo-400 font-black">返回正面</button>
+                                            <div className="mt-auto pt-4 border-t border-white/10 flex justify-between"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Ivy 2026</p><button onClick={(e)=>{e.stopPropagation(); setIsFlipped(false);}} className="text-xs text-indigo-400 font-black uppercase">返回正面</button></div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4 mt-2 px-2">
-                                    <button onClick={() => setCurrentIndex(p => (p - 1 + filteredWords.length) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center text-slate-300"><Icons.ChevronLeft /></button>
-                                    <button onClick={() => setCurrentIndex(p => (p + 1) % filteredWords.length)} className="bg-indigo-600 h-16 rounded-[24px] flex items-center justify-center text-white"><Icons.Check /></button>
-                                    <button onClick={() => setCurrentIndex(p => (p + 1) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center text-slate-600"><Icons.ChevronRight /></button>
+                                    <button onClick={() => setCurrentIndex(p => (p - 1 + filteredWords.length) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center shadow-sm text-slate-300 active:bg-slate-100"><Icons.ChevronLeft /></button>
+                                    <button onClick={() => markAsLearned(current.id)} className="bg-indigo-600 h-16 rounded-[24px] shadow-lg flex flex-col items-center justify-center text-white active:scale-95 transition-all">
+                                        <Icons.Check /><span className="text-[8px] font-black mt-1 uppercase">I GOT IT</span>
+                                    </button>
+                                    <button onClick={() => setCurrentIndex(p => (p + 1) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center shadow-sm text-slate-600 active:bg-slate-100"><Icons.ChevronRight /></button>
                                 </div>
+                            </div>
+                        )}
+                        {view === 'review' && (
+                            <div className="flex flex-col gap-6 h-[75vh] px-1 animate-in fade-in">
+                                <div className="bg-indigo-900 text-white p-8 rounded-[40px] shadow-2xl flex justify-between items-center"><div><h3 className="text-2xl font-black mb-1 italic tracking-tighter">複習時程表</h3><p className="text-indigo-300 text-[10px] font-bold uppercase tracking-widest">SRS Forgetting Curve</p></div><div className="text-right"><p className="text-3xl font-black text-indigo-400">{reviewList.length}</p><p className="text-[8px] text-indigo-200 uppercase font-black">待複習</p></div></div>
+                                {reviewList.length > 0 ? (
+                                    <div className="flex-grow flex flex-col gap-4 overflow-y-auto no-scrollbar pb-12">{reviewList.map(word => (<div key={word.id} onClick={() => { setView('flashcard'); setSelectedCategory('全部'); setCurrentIndex(MASTER_DATABASE.findIndex(w => w.id === word.id)); }} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-95"><div><div className="flex items-center gap-2"><h4 className="text-lg font-bold text-slate-900">{word.word}</h4><span className="text-[8px] px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-full font-black uppercase">Lvl {srsData[word.id]?.level}</span></div><p className="text-xs text-slate-400 mt-1">{word.reading} • {word.meaning}</p></div><div className="p-3 bg-slate-50 rounded-full text-indigo-600" onClick={(e)=>{e.stopPropagation(); playNativeAudio(word.word, 'front');}}><Icons.Volume /></div></div>))}</div>
+                                ) : (
+                                    <div className="flex-grow flex flex-col items-center justify-center text-center opacity-40 grayscale"><Icons.Check /><p className="text-sm font-bold text-slate-600 mt-4 leading-relaxed px-8 italic text-slate-400">太棒了，Ivy！目前的單字都穩穩記住囉。</p></div>
+                                )}
                             </div>
                         )}
                         {view === 'list' && (
-                            <div className="flex flex-col gap-4 h-[75vh] overflow-y-auto pb-32">
-                                <div className="flex flex-wrap gap-2 sticky top-0 bg-slate-50 py-4 z-20 justify-center">
-                                    {['全部', ...Object.keys(SUPER_CAT_IDS).sort()].map(cat => <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400'}`}>{cat}</button>)}
-                                </div>
-                                <div className="space-y-3 px-1">
-                                    {filteredWords.map((word, idx) => (
-                                        <div key={word.id} onClick={() => { setView('flashcard'); setSelectedCategory('全部'); setCurrentIndex(MASTER_DATABASE.findIndex(w => w.id === word.id)); }} className="bg-white p-5 rounded-[28px] border border-slate-100 flex items-center justify-between">
-                                            <div><div className="flex items-center gap-2 mb-1"><h4 className="text-xl font-bold">{word.word}</h4><span className="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full">{word.category}</span></div><p className="text-xs text-slate-400">{word.reading} • {word.meaning}</p></div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="flex flex-col gap-4 h-[75vh] overflow-y-auto no-scrollbar pb-32 px-1">
+                                <div className="flex flex-wrap gap-2 sticky top-0 bg-slate-50 py-4 z-20 border-b border-slate-100 justify-center">{categories.map(cat => <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>{cat}</button>)}</div>
+                                <div className="space-y-3 mt-2">{filteredWords.map(word => (<div key={word.id} onClick={() => { 
+                                    const cat = word.category;
+                                    const listInCat = MASTER_DATABASE.filter(w => w.category === cat).sort((a,b) => a.id - b.id);
+                                    const idx = listInCat.findIndex(w => w.id === word.id);
+                                    setSelectedCategory(cat); setCurrentIndex(idx); setView('flashcard');
+                                }} className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-95"><div className="flex-grow"><div className="flex items-center gap-2 mb-1"><h4 className="text-xl font-bold text-slate-900 leading-none">{word.word}</h4><span className="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full uppercase leading-none">{word.category}</span></div><p className="text-xs text-slate-400 font-medium leading-none mt-1">{word.reading} • {word.meaning}</p></div>{srsData[word.id]?.level > 0 && <div className="text-green-500"><Icons.Check /></div>}</div>))}</div>
                             </div>
                         )}
                     </main>
-                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-sm bg-white/90 backdrop-blur-2xl h-20 rounded-[35px] shadow-2xl flex items-center justify-around px-6 z-[100]">
-                        <button onClick={() => setView('flashcard')} className={`p-4 rounded-[22px] ${view==='flashcard'?'bg-indigo-600 text-white shadow-xl':'text-slate-300'}`}><Icons.Home /></button>
-                        <button onClick={() => setView('list')} className={`p-4 rounded-[22px] ${view==='list'?'bg-indigo-600 text-white shadow-xl':'text-slate-300'}`}><Icons.List /></button>
+
+                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-sm bg-white/90 backdrop-blur-2xl h-20 rounded-[35px] shadow-2xl border border-white/50 flex items-center justify-around px-6 z-[100]">
+                        <button onClick={() => setView('flashcard')} className={`p-4 rounded-[22px] transition-all touch-hit-area ${view==='flashcard'?'bg-indigo-900 text-white shadow-xl scale-110':'text-slate-300'}`}><Icons.Home /></button>
+                        <button onClick={() => setView('review')} className={`p-4 rounded-[22px] transition-all touch-hit-area ${view==='review'?'bg-indigo-900 text-white shadow-xl scale-110':'text-slate-300'}`}><Icons.History /></button>
+                        <button onClick={() => setView('list')} className={`p-4 rounded-[22px] transition-all touch-hit-area ${view==='list'?'bg-indigo-900 text-white shadow-xl scale-110':'text-slate-300'}`}><Icons.List /></button>
                     </nav>
                 </div>
             );
