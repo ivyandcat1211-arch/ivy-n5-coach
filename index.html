@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ivy's N5 日本生活全攻略 58.0 (Clean Category System)</title>
+    <title>Ivy's N5 日本生活全攻略 60.0 (AI Advanced Feedback)</title>
     <!-- 核心庫載入 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -45,7 +45,7 @@
             Square: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
         };
 
-        // --- Ivy 的核心數據庫 (僅包含妳填入的真實數據，App 會自動掃描分類) ---
+        // --- Ivy 的核心數據庫 (純淨數據版，App 會根據此處自動分類) ---
         const RAW_DATA_COLLECTION = [
             { "id": 1, "level": "N5", "word": "アイスクリーム", "reading": "アイスクリーム", "meaning": "冰淇淋", "example": "<ruby>暑<rt>あつ</rt></ruby>い<ruby>日<rt>ひ</rt></ruby>に<ruby>冷<rt>つめ</rt></ruby>たいアイスクリームを<ruby>食<rt>た</rt></ruby>べます。", "translation": "在炎熱的日子裡吃冰涼的冰淇淋。", "category": "生活日常" },
             { "id": 2, "level": "N5", "word": "間", "reading": "あいだ", "meaning": "之間, 中間", "example": "<ruby>銀行<rt>ぎんこう</rt></ruby>と<ruby>郵便局<rt>ゆうびんきょく</rt></ruby>の<ruby>間<rt>あいだ</rt></ruby>に、きれいな<ruby>公園<rt>こうえん</rt></ruby>があります。", "translation": "銀行和郵局之間，有一個漂亮的公園。", "category": "空間地點" },
@@ -264,13 +264,12 @@
             const mediaRecorderRef = useRef(null);
             const chunksRef = useRef([]);
 
-            // --- 核心改動：自動從 JSON 數據中提取唯一的 Category 清單 ---
+            // 動態分類提取：直接掃描妳填寫的數據
             const categories = useMemo(() => {
                 const uniqueCats = new Set(RAW_DATA_COLLECTION.map(w => w.category || "未分類"));
                 return ['全部', ...Array.from(uniqueCats).sort()];
             }, []);
 
-            // --- 核心改動：過濾後的單字清單，不再包含空白占位符 ---
             const filteredWords = useMemo(() => {
                 const list = [...RAW_DATA_COLLECTION].sort((a,b) => a.id - b.id);
                 return selectedCategory === '全部' ? list : list.filter(w => w.category === selectedCategory);
@@ -280,6 +279,7 @@
 
             const toRuby = (text) => text ? text.replace(/([一-龥々]+)\(([^)]+)\)/g, '<ruby>$1<rt>$2</rt></ruby>') : "";
 
+            // --- Native Speech 穩定發音 (去重) ---
             const playNativeAudio = (text, side) => {
                 if (side === 'front' && isFlipped) return;
                 if (side === 'back' && !isFlipped) return;
@@ -300,6 +300,7 @@
 
             useEffect(() => { resetState(); }, [currentIndex, view]);
 
+            // --- 強化型 AI 連線診斷引擎 (注重發音辨識與替代講法) ---
             const callGeminiAI = async (prompt) => {
                 if (!userApiKey) throw new Error("KeyMissing");
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, {
@@ -308,7 +309,7 @@
                 });
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
-                    throw new Error(`API_ERROR_${res.status}_${errData.error?.status || "Unknown"}`);
+                    throw new Error(`API_ERR_${res.status}`);
                 }
                 const data = await res.json();
                 const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -316,20 +317,31 @@
                 return JSON.parse(match ? match[0] : rawText);
             };
 
-            const analyzePron = async () => {
+            const analyzePronunciation = async () => {
                 if (!userApiKey) { setShowSettings(true); return; }
                 setAiFeedback(null);
                 setIsAnalyzing(true);
+                
                 const targetText = current?.example?.replace(/<rt>.*?<\/rt>/g, '').replace(/<[^>]*>/g, '').replace(/\(([^)]+)\)/g, '') || "";
-                const prompt = `你是專業日文導師。請評分並診斷句子：「${targetText}」。用繁體中文。必須僅回傳 JSON：{"score": 85, "tip": "建議文字"}`;
+                
+                // 核心強化 Prompt：要求注重發音辨識與其他講法
+                const prompt = `你是一位專業的日文導師。請針對學生的發音進行精確診斷。
+                目標句子：「${targetText}」。
+                請特別注重：
+                1. 發音準確度辨識。
+                2. 針對此例句內容，提供一個其他的講法（例如更口語或更禮貌的說法）。
+                3. 使用繁體中文給予溫暖的建議。
+                必須僅以 JSON 格式回傳，格式如下：
+                {"score": 85, "tip": "發音建議與辨識結果...", "alternatives": "其他相關講法建議..."}`;
+
                 try {
                     const result = await callGeminiAI(prompt);
                     setAiFeedback(result);
                 } catch (err) {
-                    let msg = "系統連線稍慢。";
-                    if (err.message.includes("403")) msg = "金鑰受限或網址設定錯誤。";
-                    if (err.message.includes("429")) msg = "今日額度已用完。";
-                    setAiFeedback({ score: "!", tip: `${msg}` });
+                    let msg = "系統連線異常。";
+                    if (err.message.includes("403")) msg = "金鑰限制或網址設定錯誤。";
+                    if (err.message.includes("429")) msg = "今日 AI 額度已耗盡。";
+                    setAiFeedback({ score: "!", tip: msg });
                 } finally { setIsAnalyzing(false); }
             };
 
@@ -347,11 +359,11 @@
                         const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
                         const url = URL.createObjectURL(blob);
                         setUserAudioUrl(url); 
-                        userAudioRef.current.src = url;
+                        userAudioRef.current.src = url; // 恢復錄音回放
                         userAudioRef.current.onended = () => setIsUserAudioPlaying(false);
                         stream.getTracks().forEach(t => t.stop());
-                        setIsRecording(false);
-                        analyzePron();
+                        setIsRecording(false); // 修正按鈕停止閃爍
+                        analyzePronunciation();
                     };
                     mediaRecorderRef.current.start();
                     setIsRecording(true);
@@ -366,22 +378,9 @@
                 }
             };
 
-            const toggleUserAudio = (e) => {
-                e.stopPropagation();
-                if (isUserAudioPlaying) {
-                    userAudioRef.current.pause();
-                    setIsUserAudioPlaying(false);
-                } else if (userAudioUrl) {
-                    userAudioRef.current.play();
-                    setIsUserAudioPlaying(true);
-                }
-            };
-
             const markAsLearned = (id) => {
-                const lvl = srsData[id]?.level || 0;
-                const nextL = Math.min(lvl + 1, 5);
-                const nextReview = Date.now() + ([0,1,3,7,14,30][nextL] * 24 * 60 * 60 * 1000);
-                setSrsData(p => ({ ...p, [id]: { level: nextL, nextReview } }));
+                const lvl = (srsData[id]?.level || 0) + 1;
+                setSrsData(p => ({ ...p, [id]: { level: lvl, nextReview: Date.now() + ([0,1,3,7,14][lvl] * 86400000) } }));
                 setCurrentIndex(p => (p + 1) % filteredWords.length);
             };
 
@@ -390,18 +389,18 @@
                     <header className="mb-4 flex justify-between items-center px-2 pt-2">
                         <div>
                             <h1 className="text-2xl font-black text-indigo-900 italic uppercase">Ivy's Coach</h1>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 leading-none">N5 Pure Data Pro 58.0</p>
+                            <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-1 uppercase">N5 Android Pro 60.0</p>
                         </div>
                         <button onClick={() => setShowSettings(true)} className="p-2 text-indigo-300 active:rotate-90 transition-transform"><Icons.Settings /></button>
                     </header>
 
                     {showSettings && (
                         <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-6">
-                            <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl animate-in zoom-in duration-300">
-                                <h3 className="text-xl font-black text-indigo-900 mb-2 italic">Security Center</h3>
-                                <p className="text-xs text-slate-500 mb-6 leading-relaxed italic text-center text-balance">貼入金鑰並儲存。這能保護金鑰不被公開掃描器撤銷。</p>
-                                <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="貼上 AIzaSy 金鑰..." className="w-full bg-slate-100 p-4 rounded-2xl text-xs mb-4 outline-none focus:ring-2 ring-indigo-500" />
-                                <button onClick={() => setShowSettings(false)} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg mb-2 uppercase">Apply Key</button>
+                            <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl animate-in zoom-in duration-300 text-center">
+                                <h3 className="text-xl font-black text-indigo-900 mb-2 italic">GCP Key Center</h3>
+                                <p className="text-xs text-slate-500 mb-6 leading-relaxed italic">金鑰僅儲存在本地。如果設定了網址限制仍失效，請嘗試暫時改為「無限制」來測試。</p>
+                                <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="貼上 AIzaSy 金鑰..." className="w-full bg-slate-100 p-4 rounded-2xl text-xs mb-4 outline-none focus:ring-2 ring-indigo-500 font-mono text-center" />
+                                <button onClick={() => setShowSettings(false)} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg mb-2 uppercase">Apply and Save</button>
                                 <button onClick={() => setShowSettings(false)} className="w-full text-slate-400 py-2 text-[10px] font-bold uppercase">Cancel</button>
                             </div>
                         </div>
@@ -410,12 +409,8 @@
                     <main className="flex-grow">
                         {view === 'flashcard' && (
                             <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-                                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                                    {categories.map(cat => <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>{cat}</button>)}
-                                </div>
-                                <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
-                                    {[0.5, 0.75, 1.0, 1.5].map(s => <button key={s} onClick={() => setSpeed(s)} className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${speed === s ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>{s}x</button>)}
-                                </div>
+                                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">{categories.map(cat => <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={`px-4 py-2 rounded-full text-[10px] font-black border whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>{cat}</button>)}</div>
+                                <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">{[0.5, 0.75, 1.0, 1.5].map(s => <button key={s} onClick={() => setSpeed(s)} className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${speed === s ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>{s}x</button>)}</div>
                                 <div className="relative h-[480px] perspective-1000" onClick={() => setIsFlipped(!isFlipped)}>
                                     <div className={`card-container transform-style-3d relative w-full h-full ${isFlipped ? 'rotate-y-180' : ''}`}>
                                         <div className={`absolute inset-0 backface-hidden bg-white rounded-[40px] shadow-xl border border-slate-100 flex flex-col items-center justify-center p-10 text-center ${isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
@@ -425,21 +420,25 @@
                                             <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-tight">{current?.word}</h2>
                                         </div>
                                         <div className={`absolute inset-0 backface-hidden bg-slate-900 rounded-[40px] shadow-2xl p-8 text-white rotate-y-180 flex flex-col overflow-y-auto custom-scrollbar ${!isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} onClick={e => e.stopPropagation()}>
-                                            <h3 className="text-3xl font-bold text-indigo-300 mb-4">{current?.meaning}</h3>
-                                            <div className="bg-white/10 p-5 rounded-3xl mb-4 border border-white/5">
-                                                <div className="flex justify-between items-center mb-2"><span className="text-[10px] text-indigo-400 uppercase font-black tracking-widest">實戰例句</span><button onClick={(e) => { e.stopPropagation(); playNativeAudio(current.example, 'back'); }} className="p-2 text-indigo-300 active:scale-125 transition-transform"><Icons.Volume /></button></div>
+                                            <h3 className="text-3xl font-bold text-indigo-300 leading-none mb-4 tracking-tighter">{current?.meaning}</h3>
+                                            <div className="bg-white/10 p-5 rounded-3xl mb-4 border border-white/5 relative">
+                                                <div className="flex justify-between items-center mb-2"><span className="text-[10px] text-indigo-400 uppercase font-black tracking-widest leading-none">實戰例句</span><button onClick={(e) => { e.stopPropagation(); playNativeAudio(current.example, 'back'); }} className="p-2 text-indigo-300 active:scale-125 transition-transform"><Icons.Volume /></button></div>
                                                 <p className="text-lg font-bold text-indigo-50 leading-relaxed" dangerouslySetInnerHTML={{ __html: toRuby(current?.example) }}></p>
                                                 <p className="text-slate-400 text-xs italic mt-2 leading-none">{current?.translation}</p>
                                             </div>
-                                            <div className="bg-indigo-600/20 p-5 rounded-3xl mb-4 border border-indigo-500/20 shadow-inner text-center">
-                                                <div className="flex justify-between items-center mb-4 text-left"><p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">跟讀診斷</p>{isAnalyzing && <span className="text-[10px] text-indigo-300 animate-pulse font-bold">正在連線 Google AI...</span>}</div>
+                                            <div className="bg-indigo-600/20 p-5 rounded-3xl mb-4 border border-indigo-500/20 shadow-inner text-center relative">
+                                                <div className="flex justify-between items-center mb-4 text-left"><p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">跟讀評分</p>{isAnalyzing && <span className="text-[10px] text-indigo-300 animate-pulse font-bold">正在連線 Google AI...</span>}</div>
                                                 {!isRecording ? (
                                                     <button onClick={startRec} className="w-full bg-indigo-600 py-3 rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"><Icons.Mic />開始錄音</button>
                                                 ) : (
                                                     <button onClick={stopRec} className="w-full bg-red-500 py-3 rounded-2xl font-black text-xs animate-pulse-red flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"><Icons.Square />停止並分析</button>
                                                 )}
-                                                {userAudioUrl && <button onClick={toggleUserAudio} className="mt-4 w-full py-2 bg-green-600/20 text-green-400 rounded-xl text-[10px] font-black border border-green-500/30 uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">{isUserAudioPlaying ? <Icons.Pause /> : <Icons.Play />} {isUserAudioPlaying ? '暫停播放' : '聽聽我的聲音'}</button>}
-                                                {aiFeedback && <div className="mt-4 bg-white/10 p-4 rounded-2xl animate-in slide-in-from-top-1 text-left"><div className="flex justify-between items-center mb-1"><span className="text-[10px] font-bold text-indigo-300 uppercase">SCORE</span><span className="text-xl font-black text-green-400">{aiFeedback.score}</span></div><p className="text-[10px] text-slate-300 italic leading-relaxed">{aiFeedback.tip}</p></div>}
+                                                {userAudioUrl && <button onClick={(e) => { e.stopPropagation(); if(isUserAudioPlaying){userAudioRef.current.pause(); setIsUserAudioPlaying(false);} else {userAudioRef.current.play(); setIsUserAudioPlaying(true);} }} className="mt-4 w-full py-2 bg-green-600/20 text-green-400 rounded-xl text-[10px] font-black border border-green-500/30 uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">{isUserAudioPlaying ? <Icons.Pause /> : <Icons.Play />} {isUserAudioPlaying ? '暫停' : '回放聲音'}</button>}
+                                                {aiFeedback && <div className="mt-4 bg-white/10 p-4 rounded-2xl animate-in slide-in-from-top-1 text-left border border-white/5">
+                                                    <div className="flex justify-between items-center mb-1"><span className="text-[10px] font-bold text-indigo-300 uppercase">SCORE</span><span className="text-xl font-black text-green-400">{aiFeedback.score}</span></div>
+                                                    <p className="text-[10px] text-slate-300 italic leading-relaxed mb-2">{aiFeedback.tip}</p>
+                                                    {aiFeedback.alternatives && <div className="pt-2 border-t border-white/10"><p className="text-[9px] font-black text-indigo-400 uppercase mb-1">情境替代講法</p><p className="text-[10px] text-indigo-200">{aiFeedback.alternatives}</p></div>}
+                                                </div>}
                                             </div>
                                             <div className="mt-auto pt-4 border-t border-white/10 flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-widest"><p>Raina Japanese</p><button onClick={()=>setIsFlipped(false)} className="text-indigo-400">Back Card</button></div>
                                         </div>
@@ -447,7 +446,7 @@
                                 </div>
                                 <div className="grid grid-cols-3 gap-4 mt-2 px-2">
                                     <button onClick={() => setCurrentIndex(p => (p - 1 + filteredWords.length) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center shadow-sm text-slate-300 active:bg-slate-100 transition-all"><Icons.ChevronLeft /></button>
-                                    <button onClick={() => markAsLearned(current.id)} className="bg-indigo-600 h-16 rounded-[24px] shadow-lg flex flex-col items-center justify-center text-white transition-all active:scale-95"><Icons.Check /><span className="text-[8px] font-black mt-1 uppercase tracking-tighter">GOT IT</span></button>
+                                    <button onClick={() => markAsLearned(current.id)} className="bg-indigo-600 h-16 rounded-[24px] shadow-lg flex flex-col items-center justify-center text-white transition-all active:scale-95 shadow-indigo-200"><Icons.Check /><span className="text-[8px] font-black mt-1 uppercase tracking-tighter">GOT IT</span></button>
                                     <button onClick={() => setCurrentIndex(p => (p + 1) % filteredWords.length)} className="bg-white h-16 rounded-[24px] flex items-center justify-center shadow-sm text-slate-600 active:bg-slate-100 transition-all"><Icons.ChevronRight /></button>
                                 </div>
                             </div>
@@ -458,7 +457,7 @@
                                 <div className="space-y-3 mt-2">{filteredWords.map(word => (<div key={word.id} onClick={() => { 
                                     const listInCat = RAW_DATA_COLLECTION.filter(w => w.category === word.category).sort((a,b) => a.id - b.id);
                                     setSelectedCategory(word.category); setCurrentIndex(listInCat.findIndex(w => w.id === word.id)); setView('flashcard');
-                                }} className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-95 transition-all"><div className="flex-grow"><div className="flex items-center gap-2 mb-1"><h4 className="text-xl font-bold text-slate-900 leading-none">{word.word}</h4><span className="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full leading-none uppercase">{word.category}</span></div><p className="text-xs text-slate-400 font-medium leading-none mt-1">{word.reading} • {word.meaning}</p></div>{srsData[word.id]?.level > 0 && <div className="text-green-500"><Icons.Check /></div>}</div>))}</div>
+                                }} className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-95 transition-all"><div className="flex-grow"><div className="flex items-center gap-2 mb-1"><h4 className="text-xl font-bold text-slate-900 leading-none tracking-tighter">{word.word}</h4><span className="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full leading-none uppercase">{word.category}</span></div><p className="text-xs text-slate-400 font-medium leading-none mt-1">{word.reading} • {word.meaning}</p></div>{srsData[word.id]?.level > 0 && <div className="text-green-500"><Icons.Check /></div>}</div>))}</div>
                             </div>
                         )}
                     </main>
